@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Assistente Personale</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ===================== OGGI ===================== -->
+  <div class="view attiva" id="view-oggi">
+    <div class="page-header">
+      <span class="eyebrow">Oggi</span>
+      <h1 id="data-oggi">—</h1>
+      <div class="riga-btn" id="tipo-giorno" style="margin-top:8px;"></div>
+    </div>
+    <div class="card">
+      <div class="quadrante-wrap">
+        <div id="quadrante-cont"></div>
+        <div class="quadrante-legenda" id="quadrante-legenda"></div>
+      </div>
+    </div>
+    <div id="statistiche-oggi"></div>
+    <h3 style="margin:18px 4px 6px 4px;">La tua giornata</h3>
+    <div class="card" id="timeline-oggi-card">
+      <div id="timeline-oggi"></div>
+    </div>
+  </div>
+
+  <!-- ===================== ROUTINE ===================== -->
+  <div class="view" id="view-routine">
+    <div class="page-header">
+      <span class="eyebrow">Routine</span>
+      <h1>Attività ricorrenti</h1>
+      <div class="sub">Quello che fai (o vorresti fare) ogni giorno o certi giorni della settimana.</div>
+    </div>
+    <div class="card">
+      <div class="riga-btn" style="margin-bottom:12px;">
+        <button class="btn btn-accent btn-block" id="btn-nuova-routine">+ Nuova routine</button>
+      </div>
+      <div id="lista-routine"></div>
+    </div>
+  </div>
+
+  <!-- ===================== TASK ===================== -->
+  <div class="view" id="view-task">
+    <div class="page-header">
+      <span class="eyebrow">Task extra</span>
+      <h1>Impegni e scadenze</h1>
+      <div class="sub">Per un giorno preciso, oppure per la settimana, il mese o l'anno.</div>
+    </div>
+    <div class="card">
+      <div class="riga-btn" style="margin-bottom:12px;">
+        <button class="btn btn-accent btn-block" id="btn-nuova-task">+ Nuova task</button>
+      </div>
+      <div class="riga-btn" id="filtri-task" style="margin-bottom:10px;"></div>
+      <div id="lista-task"></div>
+    </div>
+  </div>
+
+  <!-- ===================== IMPOSTAZIONI ===================== -->
+  <div class="view" id="view-impostazioni">
+    <div class="page-header">
+      <span class="eyebrow">Impostazioni</span>
+      <h1>Dati e notifiche</h1>
+    </div>
+    <div id="view-impostazioni-corpo"></div>
+  </div>
+
+</div>
+
+<!-- ===================== TAB BAR ===================== -->
+<div class="tab-bar">
+  <button class="tab-btn attivo" data-tab="oggi"><span class="ico">◔</span>Oggi</button>
+  <button class="tab-btn" data-tab="routine"><span class="ico">↻</span>Routine</button>
+  <button class="tab-btn" data-tab="task"><span class="ico">✓</span>Task</button>
+  <button class="tab-btn" data-tab="impostazioni"><span class="ico">⚙</span>Impostazioni</button>
+</div>
+
+<!-- ===================== FOGLIO (form overlay) ===================== -->
+<div class="overlay" id="overlay-foglio">
+  <div class="foglio" id="foglio-contenuto"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ===================== SCRIPT: Capacitor (senza bundler) ===================== -->
+<script src="js/vendor/capacitor-core.js"></script>
+<script src="js/vendor/capacitor-synapse-stub.js"></script>
+<script src="js/vendor/plugin-local-notifications.js"></script>
+<script src="js/vendor/plugin-preferences.js"></script>
+<script src="js/vendor/plugin-filesystem.js"></script>
+<script src="js/vendor/plugin-share.js"></script>
+
+<!-- ===================== SCRIPT: app ===================== -->
+<script src="js/date-utils.js"></script>
+<script src="js/cascade.js"></script>
+<script src="js/dial.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/notifications.js"></script>
+<script src="js/ui-routine.js"></script>
+<script src="js/ui-task.js"></script>
+<script src="js/ui-oggi.js"></script>
+<script src="js/ui-impostazioni.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

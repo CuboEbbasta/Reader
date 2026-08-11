@@ -1,0 +1,52 @@
+name: Build APK
+
+# Si avvia da solo ad ogni push sul branch "main", oppure a mano dalla
+# scheda "Actions" del repository (bottone "Run workflow") — utile se
+# stai gestendo tutto da telefono e vuoi rilanciare la build senza
+# ripubblicare i file.
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write   # serve per poter creare la Release con l'apk allegato
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scarica il codice del progetto
+        uses: actions/checkout@v4
+
+      - name: Prepara Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installa le dipendenze (Capacitor + copia file offline)
+        run: npm install
+
+      - name: Sincronizza il progetto Android
+        run: npm run sync:android
+
+      - name: Prepara Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Compila l'APK (debug, installabile direttamente)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Pubblica l'APK come Release scaricabile
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "Assistente Personale — build ${{ github.run_number }}"
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
