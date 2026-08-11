@@ -16,7 +16,7 @@ integrazione con Ollama. La struttura dati (vedi `www/js/storage.js`) è pensata
 per poterli aggiungere senza riscrivere quanto già fatto.
 
 ## Prima di iniziare
-Serve **Node.js** (versione 18 o superiore) installato sul PC:
+Serve **Node.js** (versione 22 o superiore — richiesta da Capacitor 8) installato sul PC:
 https://nodejs.org
 
 ---
