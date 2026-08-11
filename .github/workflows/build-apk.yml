@@ -1,16 +1,14 @@
 name: Build APK
 
-# Si avvia da solo ad ogni push sul branch "main", oppure a mano dalla
-# scheda "Actions" del repository (bottone "Run workflow") — utile se
-# stai gestendo tutto da telefono e vuoi rilanciare la build senza
-# ripubblicare i file.
 on:
   workflow_dispatch: {}
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'debug-logs/**'
 
 permissions:
-  contents: write   # serve per poter creare la Release con l'apk allegato
+  contents: write
 
 jobs:
   build:
@@ -28,21 +26,33 @@ jobs:
         run: npm install
 
       - name: Sincronizza il progetto Android
-        run: npm run sync:android
+        id: sync
+        run: |
+          set +e
+          npm run sync:android > /tmp/sync.log 2>&1
+          echo "codice=$?" >> "$GITHUB_OUTPUT"
+          cat /tmp/sync.log
 
       - name: Prepara Java
+        if: steps.sync.outputs.codice == '0'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
       - name: Compila l'APK (debug, installabile direttamente)
+        if: steps.sync.outputs.codice == '0'
+        id: gradle
         working-directory: android
         run: |
+          set +e
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon > /tmp/gradle.log 2>&1
+          echo "codice=$?" >> "$GITHUB_OUTPUT"
+          tail -c 60000 /tmp/gradle.log
 
       - name: Pubblica l'APK come Release scaricabile
+        if: steps.gradle.outputs.codice == '0'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
@@ -50,3 +60,31 @@ jobs:
           files: android/app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # I log "normali" di Actions sono su uno storage esterno che il mio
+      # ambiente non puo' raggiungere: se qualcosa fallisce, il log completo
+      # viene invece salvato in un file dentro al repository stesso, cosi'
+      # posso leggerlo con le normali API di GitHub.
+      - name: Se qualcosa e' fallito, salva il log nel repo per debug
+        if: steps.sync.outputs.codice != '0' || steps.gradle.outputs.codice != '0'
+        run: |
+          mkdir -p debug-logs
+          {
+            echo "# Log build fallita - run ${{ github.run_number }}"
+            echo
+            echo "## Sincronizzazione Android (codice: ${{ steps.sync.outputs.codice }})"
+            echo '```'
+            cat /tmp/sync.log 2>/dev/null || echo "(nessun log)"
+            echo '```'
+            echo
+            echo "## Build Gradle (codice: ${{ steps.gradle.outputs.codice }})"
+            echo '```'
+            tail -c 60000 /tmp/gradle.log 2>/dev/null || echo "(non eseguita)"
+            echo '```'
+          } > debug-logs/ultimo-errore.md
+          git config user.email "actions@users.noreply.github.com"
+          git config user.name "GitHub Actions"
+          git add debug-logs/ultimo-errore.md
+          git commit -m "Log di debug (run ${{ github.run_number }})" || true
+          git push
+          exit 1
