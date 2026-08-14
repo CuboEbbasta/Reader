@@ -49,8 +49,12 @@ const UiImpostazioni = (function () {
       <div class="card card-flat">
         <div class="elemento-meta">
           Assistente Personale — versione dati ${Dati.stato().versione}.<br>
-          Modulo attuale: routine, task con cascata temporale, vista di oggi e notifiche offline.<br>
-          I moduli dieta, workout, obiettivi, journaling e calendario arriveranno nelle prossime versioni.
+          Moduli attuali: routine, task con cascata temporale, obiettivi (1 mese → 10 anni, con tappe/timeline),
+          diario serale, dieta (profilo, target, piano settimanale, log pasti),
+          workout (scheda veloce, scheda con sbarra, scheda adattiva, log),
+          panoramica (orario fisso, vista mese, vista anno, storico/recap),
+          vista di oggi e notifiche offline.<br>
+          Prossimo grande passo: integrazione con un'IA locale (facoltativa).
         </div>
       </div>
     `;

@@ -37,6 +37,22 @@ const DataUtils = (function () {
     return dataToISO(d);
   }
 
+  function addMesi(iso, n) {
+    const d = isoToData(iso);
+    const giornoOriginale = d.getDate();
+    d.setDate(1); // evita overflow (es. 31 gennaio + 1 mese)
+    d.setMonth(d.getMonth() + n);
+    const ultimoGiornoMese = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    d.setDate(Math.min(giornoOriginale, ultimoGiornoMese));
+    return dataToISO(d);
+  }
+
+  function addAnni(iso, n) {
+    const d = isoToData(iso);
+    d.setFullYear(d.getFullYear() + n);
+    return dataToISO(d);
+  }
+
   function differenzaGiorni(isoA, isoB) {
     // isoB - isoA, in giorni interi
     return Math.round((isoToData(isoB) - isoToData(isoA)) / 86400000);
@@ -86,12 +102,50 @@ const DataUtils = (function () {
     return now.getHours() * 60 + now.getMinutes();
   }
 
+  /** Restituisce l'elenco di date ISO (YYYY-MM-DD) di un mese, dato un qualsiasi giorno ISO di quel mese */
+  function giorniDelMese(isoDelMese) {
+    const d = isoToData(isoDelMese);
+    const anno = d.getFullYear(), mese = d.getMonth();
+    const numGiorni = new Date(anno, mese + 1, 0).getDate();
+    const risultato = [];
+    for (let g = 1; g <= numGiorni; g++) risultato.push(dataToISO(new Date(anno, mese, g)));
+    return risultato;
+  }
+
+  function primoGiornoMese(isoDelMese) {
+    const d = isoToData(isoDelMese);
+    return dataToISO(new Date(d.getFullYear(), d.getMonth(), 1));
+  }
+
+  function meseSuccessivo(isoDelMese, delta) {
+    const d = isoToData(isoDelMese);
+    return dataToISO(new Date(d.getFullYear(), d.getMonth() + delta, 1));
+  }
+
+  function nomeMeseAnno(isoDelMese) {
+    const d = isoToData(isoDelMese);
+    return `${NOMI_MESI[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  /** Converte un nome giorno italiano (o abbreviato) in numero ISO 1-7; ritorna null se non riconosciuto */
+  const MAPPA_NOMI_GIORNO = {
+    lunedi: 1, lun: 1, martedi: 2, mar: 2, mercoledi: 3, mer: 3,
+    giovedi: 4, gio: 4, venerdi: 5, ven: 5, sabato: 6, sab: 6, domenica: 7, dom: 7
+  };
+  function giornoDaTesto(testo) {
+    if (typeof testo === 'number') return testo >= 1 && testo <= 7 ? testo : null;
+    if (!testo) return null;
+    const pulito = String(testo).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    return MAPPA_NOMI_GIORNO[pulito] || null;
+  }
+
   return {
     NOMI_GIORNI, NOMI_GIORNI_ESTESI, NOMI_MESI,
     pad2, oggiISO, dataToISO, isoToData, weekdayISO,
-    addGiorni, differenzaGiorni, fineSettimana, fineMese, fineAnno,
+    addGiorni, addMesi, addAnni, differenzaGiorni, fineSettimana, fineMese, fineAnno,
     formatDataBreve, formatDataEstesa, formatOraMinutiInGiorno,
-    oraToMinuti, minutiAdesso
+    oraToMinuti, minutiAdesso,
+    giorniDelMese, primoGiornoMese, meseSuccessivo, nomeMeseAnno, giornoDaTesto
   };
 })();
 

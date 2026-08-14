@@ -17,13 +17,12 @@
       <h1 id="data-oggi">—</h1>
       <div class="riga-btn" id="tipo-giorno" style="margin-top:8px;"></div>
     </div>
-    <div class="card">
-      <div class="quadrante-wrap">
-        <div id="quadrante-cont"></div>
-        <div class="quadrante-legenda" id="quadrante-legenda"></div>
+    <div class="card oggi-riepilogo">
+      <div class="oggi-riepilogo-riga">
+        <div class="oggi-mini-quadrante" id="quadrante-cont"></div>
+        <div class="oggi-riepilogo-stats" id="statistiche-oggi"></div>
       </div>
     </div>
-    <div id="statistiche-oggi"></div>
     <h3 style="margin:18px 4px 6px 4px;">La tua giornata</h3>
     <div class="card" id="timeline-oggi-card">
       <div id="timeline-oggi"></div>
@@ -33,9 +32,10 @@
   <!-- ===================== ROUTINE ===================== -->
   <div class="view" id="view-routine">
     <div class="page-header">
-      <span class="eyebrow">Routine</span>
+      <span class="eyebrow">Fare</span>
       <h1>Attività ricorrenti</h1>
       <div class="sub">Quello che fai (o vorresti fare) ogni giorno o certi giorni della settimana.</div>
+      <div class="sub-nav-pills" id="subnav-routine"></div>
     </div>
     <div class="card">
       <div class="riga-btn" style="margin-bottom:12px;">
@@ -48,9 +48,10 @@
   <!-- ===================== TASK ===================== -->
   <div class="view" id="view-task">
     <div class="page-header">
-      <span class="eyebrow">Task extra</span>
+      <span class="eyebrow">Fare</span>
       <h1>Impegni e scadenze</h1>
       <div class="sub">Per un giorno preciso, oppure per la settimana, il mese o l'anno.</div>
+      <div class="sub-nav-pills" id="subnav-task"></div>
     </div>
     <div class="card">
       <div class="riga-btn" style="margin-bottom:12px;">
@@ -61,11 +62,86 @@
     </div>
   </div>
 
+  <!-- ===================== DIETA ===================== -->
+  <div class="view" id="view-dieta">
+    <div class="page-header">
+      <span class="eyebrow">Salute</span>
+      <h1>Mangiare bene</h1>
+      <div class="sub">Piano indicativo, sempre modificabile — non sostituisce un/a nutrizionista.</div>
+      <div class="sub-nav-pills" id="subnav-dieta"></div>
+    </div>
+    <div id="dieta-corpo"></div>
+  </div>
+
+  <!-- ===================== WORKOUT ===================== -->
+  <div class="view" id="view-workout">
+    <div class="page-header">
+      <span class="eyebrow">Salute</span>
+      <h1>Schede di allenamento</h1>
+      <div class="sub">Veloce senza attrezzi, completa con sbarra, o adattiva sui tuoi giorni.</div>
+      <div class="sub-nav-pills" id="subnav-workout"></div>
+    </div>
+    <div id="workout-corpo"></div>
+  </div>
+
+  <!-- ===================== OBIETTIVI ===================== -->
+  <div class="view" id="view-obiettivi">
+    <div class="page-header">
+      <span class="eyebrow">Crescita</span>
+      <h1>Dove vuoi arrivare</h1>
+      <div class="sub">1 mese · 6 mesi · 1 anno · 5 anni · 10 anni — concreti, generali o di valore.</div>
+      <div class="sub-nav-pills" id="subnav-obiettivi"></div>
+    </div>
+    <div class="card">
+      <div class="riga-btn" style="margin-bottom:12px;">
+        <button class="btn btn-accent btn-block" id="btn-nuovo-obiettivo">+ Nuovo obiettivo</button>
+      </div>
+      <div class="riga-btn" id="filtri-obiettivi" style="margin-bottom:10px;"></div>
+      <div id="lista-obiettivi"></div>
+    </div>
+  </div>
+
+  <!-- ===================== DIARIO ===================== -->
+  <div class="view" id="view-diario">
+    <div class="page-header">
+      <span class="eyebrow">Crescita</span>
+      <h1>Come è andata oggi</h1>
+      <div class="sub-nav-pills" id="subnav-diario"></div>
+    </div>
+    <div class="card">
+      <div class="riga-btn" style="justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <button class="btn btn-sm" id="diario-prev">←</button>
+        <div style="text-align:center;flex:1;">
+          <strong id="diario-data">—</strong>
+          <div><button class="btn btn-sm btn-ghost" id="diario-btn-oggi">Torna a oggi</button></div>
+        </div>
+        <button class="btn btn-sm" id="diario-next">→</button>
+      </div>
+      <div id="diario-statistiche"></div>
+    </div>
+    <div class="card">
+      <div id="diario-form"></div>
+    </div>
+    <h3 style="margin:18px 4px 6px 4px;">Voci recenti</h3>
+    <div class="card" id="diario-storico"></div>
+  </div>
+
+  <!-- ===================== PANORAMICA ===================== -->
+  <div class="view" id="view-panoramica">
+    <div class="page-header">
+      <span class="eyebrow">Altro</span>
+      <h1>Oltre il giorno</h1>
+      <div class="sub-nav-pills" id="subnav-panoramica"></div>
+    </div>
+    <div id="panoramica-corpo"></div>
+  </div>
+
   <!-- ===================== IMPOSTAZIONI ===================== -->
   <div class="view" id="view-impostazioni">
     <div class="page-header">
-      <span class="eyebrow">Impostazioni</span>
+      <span class="eyebrow">Altro</span>
       <h1>Dati e notifiche</h1>
+      <div class="sub-nav-pills" id="subnav-impostazioni"></div>
     </div>
     <div id="view-impostazioni-corpo"></div>
   </div>
@@ -75,9 +151,10 @@
 <!-- ===================== TAB BAR ===================== -->
 <div class="tab-bar">
   <button class="tab-btn attivo" data-tab="oggi"><span class="ico">◔</span>Oggi</button>
-  <button class="tab-btn" data-tab="routine"><span class="ico">↻</span>Routine</button>
-  <button class="tab-btn" data-tab="task"><span class="ico">✓</span>Task</button>
-  <button class="tab-btn" data-tab="impostazioni"><span class="ico">⚙</span>Impostazioni</button>
+  <button class="tab-btn" data-tab="fare"><span class="ico">✓</span>Fare</button>
+  <button class="tab-btn" data-tab="salute"><span class="ico">♥</span>Salute</button>
+  <button class="tab-btn" data-tab="crescita"><span class="ico">◆</span>Crescita</button>
+  <button class="tab-btn" data-tab="altro"><span class="ico">▤</span>Altro</button>
 </div>
 
 <!-- ===================== FOGLIO (form overlay) ===================== -->
@@ -101,9 +178,21 @@
 <script src="js/dial.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/notifications.js"></script>
+<script src="js/diet-database.js"></script>
+<script src="js/diet-calc.js"></script>
+<script src="js/diet-plan.js"></script>
+<script src="js/workout-database.js"></script>
+<script src="js/workout-calc.js"></script>
+<script src="js/workout-plan.js"></script>
+<script src="js/recap-calc.js"></script>
 <script src="js/ui-routine.js"></script>
 <script src="js/ui-task.js"></script>
 <script src="js/ui-oggi.js"></script>
+<script src="js/ui-obiettivi.js"></script>
+<script src="js/ui-journal.js"></script>
+<script src="js/ui-dieta.js"></script>
+<script src="js/ui-workout.js"></script>
+<script src="js/ui-panoramica.js"></script>
 <script src="js/ui-impostazioni.js"></script>
 <script src="js/app.js"></script>
 

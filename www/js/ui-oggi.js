@@ -6,9 +6,9 @@
  */
 const UiOggi = (function () {
 
-  function vociOggi() {
-    const oggi = DataUtils.oggiISO();
-    const weekday = DataUtils.weekdayISO(oggi);
+  function vociDiGiorno(dataISO) {
+    dataISO = dataISO || DataUtils.oggiISO();
+    const weekday = DataUtils.weekdayISO(dataISO);
     const s = Dati.stato();
 
     const daRoutine = s.routine
@@ -25,7 +25,7 @@ const UiOggi = (function () {
 
     const daTask = s.task
       .filter(t => !t.completata)
-      .map(t => ({ t, stato: Cascata.statoTask(t, oggi) }))
+      .map(t => ({ t, stato: Cascata.statoTask(t, dataISO) }))
       .filter(x => x.stato.visibileOggi || x.stato.scaduta)
       .map(({ t, stato }) => {
         const conOrario = !!t.oraPromemoria;
@@ -44,8 +44,22 @@ const UiOggi = (function () {
         };
       });
 
-    return daRoutine.concat(daTask);
+    const daOrarioFisso = (s.orarioFisso || [])
+      .filter(o => o.giorno === weekday)
+      .map(o => ({
+        chiave: `orario:${o.id}`,
+        nome: `${o.materia}${o.aula ? ' (' + o.aula + ')' : ''}`,
+        tipo: 'orario',
+        priorita: 5,
+        inizioMin: DataUtils.oraToMinuti(o.oraInizio),
+        fineMin: DataUtils.oraToMinuti(o.oraFine),
+        conOrario: true
+      }));
+
+    return daRoutine.concat(daTask, daOrarioFisso);
   }
+
+  function vociOggi() { return vociDiGiorno(DataUtils.oggiISO()); }
 
   function renderQuadrante(voci) {
     const cont = document.getElementById('quadrante-cont');
@@ -56,31 +70,31 @@ const UiOggi = (function () {
       nome: v.nome, tipo: v.tipo, chiave: v.chiave
     }));
     const spicchi = Quadrante.calcolaSpicchi(blocchi);
-    cont.innerHTML = Quadrante.renderSVG(spicchi, DataUtils.minutiAdesso(), 280);
-
-    const legenda = document.getElementById('quadrante-legenda');
-    const rilevanti = spicchi.filter(s => s.tipo !== 'libero');
-    const libero = spicchi.filter(s => s.tipo === 'libero').reduce((acc, s) => acc + (s.fineMin - s.inizioMin), 0);
-    let righe = rilevanti.map(s => `
-      <div class="legenda-riga">
-        <span class="legenda-swatch" style="background:${s.colore}"></span>
-        <span class="legenda-nome">${UiRoutine.escapeHtml(s.nome)}</span>
-        <span class="legenda-tempo">${DataUtils.formatOraMinutiInGiorno(s.inizioMin)}–${DataUtils.formatOraMinutiInGiorno(s.fineMin)}</span>
-      </div>`).join('');
-    righe += `
-      <div class="legenda-riga">
-        <span class="legenda-swatch" style="background:${Quadrante.COLORE_LIBERO}"></span>
-        <span class="legenda-nome">Tempo libero</span>
-        <span class="legenda-tempo">${(libero / 60).toFixed(1)} h</span>
-      </div>`;
-    legenda.innerHTML = righe;
+    cont.innerHTML = Quadrante.renderSVG(spicchi, DataUtils.minutiAdesso(), 104);
   }
 
-  function statoCompletamento(chiave) {
-    const oggi = DataUtils.oggiISO();
-    const log = Dati.stato().log[oggi];
+  function statoCompletamento(chiave, dataISO) {
+    dataISO = dataISO || DataUtils.oggiISO();
+    const log = Dati.stato().log[dataISO];
     if (!log || !(chiave in log.completamenti)) return null; // non ancora risposto
     return log.completamenti[chiave]; // true / false
+  }
+
+  /** Riutilizzabile anche dal diario per mostrare le statistiche di un giorno qualsiasi */
+  function calcolaStatistiche(dataISO) {
+    dataISO = dataISO || DataUtils.oggiISO();
+    const voci = vociDiGiorno(dataISO);
+    const totali = voci.length;
+    let completate = 0, pesoTotale = 0, pesoFatto = 0;
+    voci.forEach(v => {
+      pesoTotale += v.priorita;
+      if (statoCompletamento(v.chiave, dataISO) === true) { completate++; pesoFatto += v.priorita; }
+    });
+    return {
+      totali, completate,
+      percCompletate: totali ? Math.round((completate / totali) * 100) : 0,
+      percPesata: pesoTotale ? Math.round((pesoFatto / pesoTotale) * 100) : 0
+    };
   }
 
   function renderTimeline(voci) {
@@ -109,7 +123,7 @@ const UiOggi = (function () {
         <div class="timeline-barra" style="background:${colore}"></div>
         <div class="timeline-corpo">
           <div class="timeline-titolo">${UiRoutine.escapeHtml(v.nome)}</div>
-          <div class="timeline-meta">Priorità ${v.priorita}/10 ${v.tipo === 'task' ? '· task' : '· routine'} ${badge}</div>
+          <div class="timeline-meta">Priorità ${v.priorita}/10 ${v.tipo === 'task' ? '· task' : v.tipo === 'orario' ? '· orario fisso' : '· routine'} ${badge}</div>
           <div class="timeline-azioni">
             <button class="btn btn-sm btn-ok btn-segna" data-chiave="${v.chiave}" data-valore="true">✅ Fatto</button>
             <button class="btn btn-sm btn-warn btn-segna" data-chiave="${v.chiave}" data-valore="false">❌ Non fatto</button>
@@ -128,23 +142,11 @@ const UiOggi = (function () {
   }
 
   function renderStatistiche(voci) {
-    const oggi = DataUtils.oggiISO();
-    const totali = voci.length;
-    let completate = 0, pesoTotale = 0, pesoFatto = 0;
-    voci.forEach(v => {
-      pesoTotale += v.priorita;
-      const st = statoCompletamento(v.chiave);
-      if (st === true) { completate++; pesoFatto += v.priorita; }
-    });
-    const percCompletate = totali ? Math.round((completate / totali) * 100) : 0;
-    const percPesata = pesoTotale ? Math.round((pesoFatto / pesoTotale) * 100) : 0;
-
+    const { completate, totali, percCompletate } = calcolaStatistiche(DataUtils.oggiISO());
     document.getElementById('statistiche-oggi').innerHTML = `
-      <div class="griglia-3">
-        <div class="stat-box"><div class="stat-num">${completate}/${totali}</div><div class="stat-lbl">Completate</div></div>
-        <div class="stat-box"><div class="stat-num">${percCompletate}%</div><div class="stat-lbl">Aderenza</div></div>
-        <div class="stat-box"><div class="stat-num">${percPesata}%</div><div class="stat-lbl">Pesata priorità</div></div>
-      </div>`;
+      <div class="oggi-stat-riga"><span class="oggi-stat-num">${completate}/${totali}</span><span class="oggi-stat-lbl">completate</span></div>
+      <div class="oggi-stat-riga"><span class="oggi-stat-num">${percCompletate}%</span><span class="oggi-stat-lbl">aderenza oggi</span></div>
+    `;
   }
 
   function renderTipoGiorno() {
@@ -185,7 +187,7 @@ const UiOggi = (function () {
     Notifiche.programmaPerOggi(daNotificare);
   }
 
-  return { renderTutto, vociOggi };
+  return { renderTutto, vociOggi, vociDiGiorno, calcolaStatistiche, statoCompletamento };
 })();
 
 window.UiOggi = UiOggi;

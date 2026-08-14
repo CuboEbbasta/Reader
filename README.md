@@ -1,19 +1,32 @@
 # Assistente Personale — Prima versione (fondamenta)
 
-Questa è la prima "fetta" del progetto, come deciso insieme: **routine + task con
-cascata temporale + vista di oggi (quadrante 24h) + notifiche offline**, sia per
-Android (vera app installabile, .apk) sia per PC (app Electron, si apre come
-programma vero, non nel browser).
+Questa è la quinta "fetta" del progetto — e con questa, tutte le funzionalità
+principali concordate sono implementate: **routine + task con cascata temporale
++ vista di oggi (quadrante 24h) + notifiche offline**, **obiettivi (con tappe/
+timeline) + diario serale**, **dieta**, **workout**, e ora anche
+**Panoramica**: orario fisso settimanale (lezioni/lavoro, importabile da JSON),
+vista mese (calendario colorato per aderenza + torta di come hai speso il
+tempo), vista anno (periodi come sessioni d'esame/studio/lavoro su una
+timeline di 12 mesi + torta), e storico/recap (settimanale e mensile, con
+confronto rispetto al periodo precedente per capire se stai migliorando).
 
 Tutto funziona **offline, senza server**: i dati restano sul dispositivo, e per
 tenere allineati telefono e PC si usa l'esportazione/importazione manuale di un
 file .json (Impostazioni → Backup).
 
-## Cosa NON c'è ancora (arriverà nelle prossime versioni)
-Dieta, workout ("schede"), obiettivi (1 mese/6 mesi/1 anno/5-10 anni), daily
-journaling, vista mese/12 mesi, storico + recap, import calendario lezioni/lavoro,
-integrazione con Ollama. La struttura dati (vedi `www/js/storage.js`) è pensata
-per poterli aggiungere senza riscrivere quanto già fatto.
+## Cosa NON c'è ancora
+Integrazione con Ollama (IA locale). Tutto il resto del progetto originale è
+al suo posto — quello che manca ora è la fase dedicata al design dell'interfaccia
+(vedi nota sotto), poi l'IA, poi APK + live testing.
+
+## Nota sulla UI attuale
+Prima fase di riordino completata: navigazione ridotta da 9 a 5 tab principali
+(Oggi, Fare [Routine/Task], Salute [Dieta/Workout], Crescita [Obiettivi/Diario],
+Altro [Panoramica/Impostazioni], con sotto-navigazione a pillole dentro ognuna),
+e il quadrante 24h nella vista Oggi è ora un elemento compatto/laterale invece
+che centrale, come richiesto. Non è stato possibile generare un'anteprima
+visiva da qui (gli strumenti di rendering disponibili in questo ambiente non
+eseguono JavaScript moderno): la resa reale si vede solo con la build.
 
 ## Prima di iniziare
 Serve **Node.js** (versione 22 o superiore — richiesta da Capacitor 8) installato sul PC:

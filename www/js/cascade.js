@@ -1,44 +1,76 @@
 /**
  * cascade.js
- * Implementa la "cascata" degli ambiti temporali per le task:
- * anno -> mese (quando manca <= 1 mese) -> settimana (quando manca <= 1 settimana) -> giorno (quando manca <= 1 giorno)
- * La stessa logica di soglie si applica, concettualmente, anche alla ricategorizzazione degli obiettivi
- * (vedi ui-obiettivi.js in una versione futura), qui e' centralizzata cosi' resta coerente ovunque.
+ * Motore generico di "cascata temporale": un elemento (task o obiettivo) ha
+ * un ambito originale (es. "anno") e una scadenza; quando la scadenza si
+ * avvicina, l'elemento viene ricategorizzato in un ambito più piccolo
+ * (es. "mese", poi "settimana", poi "giorno"), pur restando lo stesso
+ * elemento — non viene mai scomposto automaticamente in azioni più piccole,
+ * solo "visualizzato" nel contenitore temporale giusto.
+ *
+ * Lo stesso motore serve sia per le task (giorno/settimana/mese/anno) sia
+ * per gli obiettivi (1 mese/6 mesi/1 anno/5 anni/10 anni), con scale e
+ * soglie diverse: vedi le due istanze create in fondo al file.
  */
-const Cascata = (function () {
-  const ORDINE = ['anno', 'mese', 'settimana', 'giorno'];
-  // Se i giorni mancanti alla scadenza sono <= soglia del livello corrente, si scende al livello successivo.
-  const SOGLIE_GIORNI = { anno: 31, mese: 7, settimana: 1 };
-
+function creaMotoreCascata({ ordine, soglieGiorni, etichette }) {
   function ambitoEffettivo(ambitoOriginale, giorniMancanti) {
-    let idx = ORDINE.indexOf(ambitoOriginale);
-    if (idx === -1) idx = ORDINE.length - 1;
-    while (idx < ORDINE.length - 1) {
-      const livello = ORDINE[idx];
-      const soglia = SOGLIE_GIORNI[livello];
+    let idx = ordine.indexOf(ambitoOriginale);
+    if (idx === -1) idx = ordine.length - 1;
+    while (idx < ordine.length - 1) {
+      const livello = ordine[idx];
+      const soglia = soglieGiorni[livello];
       if (giorniMancanti <= soglia) idx++; else break;
     }
-    return ORDINE[idx];
+    return ordine[idx];
   }
 
-  /** Calcola lo stato "vivo" di una task rispetto a una data di riferimento (default: oggi) */
-  function statoTask(task, oggiISO) {
+  /** Calcola lo stato "vivo" di un elemento (task o obiettivo) con {ambito, scadenza, completata/completato} */
+  function statoElemento(elemento, oggiISO, campoCompletato) {
     oggiISO = oggiISO || DataUtils.oggiISO();
-    const giorniMancanti = DataUtils.differenzaGiorni(oggiISO, task.scadenza);
-    const effettivo = ambitoEffettivo(task.ambito, giorniMancanti);
+    const completato = !!elemento[campoCompletato];
+    const giorniMancanti = DataUtils.differenzaGiorni(oggiISO, elemento.scadenza);
+    const effettivo = ambitoEffettivo(elemento.ambito, giorniMancanti);
     return {
       giorniMancanti,
       ambitoEffettivo: effettivo,
-      cascata: effettivo !== task.ambito,
-      scaduta: giorniMancanti < 0 && !task.completata,
-      visibileOggi: effettivo === 'giorno' && !task.completata,
-      urgente: giorniMancanti <= 1 && !task.completata
+      cascata: effettivo !== elemento.ambito,
+      scaduta: giorniMancanti < 0 && !completato,
+      visibileOggi: effettivo === ordine[ordine.length - 1] && !completato,
+      urgente: giorniMancanti <= 1 && !completato
     };
   }
 
-  const ETICHETTE_AMBITO = { anno: 'Anno', mese: 'Mese', settimana: 'Settimana', giorno: 'Giorno' };
+  return { ORDINE: ordine, SOGLIE_GIORNI: soglieGiorni, ETICHETTE_AMBITO: etichette, ambitoEffettivo, statoElemento };
+}
 
-  return { ORDINE, SOGLIE_GIORNI, ambitoEffettivo, statoTask, ETICHETTE_AMBITO };
-})();
+// ---- Istanza per le TASK: giorno/settimana/mese/anno ----
+const MotoreTask = creaMotoreCascata({
+  ordine: ['anno', 'mese', 'settimana', 'giorno'],
+  soglieGiorni: { anno: 31, mese: 7, settimana: 1 },
+  etichette: { anno: 'Anno', mese: 'Mese', settimana: 'Settimana', giorno: 'Giorno' }
+});
+
+const Cascata = {
+  ORDINE: MotoreTask.ORDINE,
+  SOGLIE_GIORNI: MotoreTask.SOGLIE_GIORNI,
+  ETICHETTE_AMBITO: MotoreTask.ETICHETTE_AMBITO,
+  ambitoEffettivo: MotoreTask.ambitoEffettivo,
+  statoTask: (task, oggiISO) => MotoreTask.statoElemento(task, oggiISO, 'completata')
+};
+
+// ---- Istanza per gli OBIETTIVI: 1 mese/6 mesi/1 anno/5 anni/10 anni ----
+const MotoreObiettivi = creaMotoreCascata({
+  ordine: ['10anni', '5anni', '1anno', '6mesi', '1mese'],
+  soglieGiorni: { '10anni': 5 * 365, '5anni': 366, '1anno': 183, '6mesi': 31 },
+  etichette: { '10anni': '10 anni', '5anni': '5 anni', '1anno': '1 anno', '6mesi': '6 mesi', '1mese': '1 mese' }
+});
+
+const CascataObiettivi = {
+  ORDINE: MotoreObiettivi.ORDINE,
+  SOGLIE_GIORNI: MotoreObiettivi.SOGLIE_GIORNI,
+  ETICHETTE_AMBITO: MotoreObiettivi.ETICHETTE_AMBITO,
+  ambitoEffettivo: MotoreObiettivi.ambitoEffettivo,
+  statoObiettivo: (obiettivo, oggiISO) => MotoreObiettivi.statoElemento(obiettivo, oggiISO, 'completato')
+};
 
 window.Cascata = Cascata;
+window.CascataObiettivi = CascataObiettivi;
