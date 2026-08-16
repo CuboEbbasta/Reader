@@ -7,10 +7,10 @@ const App = (function () {
 
   // Le 5 tab principali; alcune raggruppano più viste con una sotto-nav a pillole.
   const GRUPPI = {
-    fare: { figli: ['routine', 'task'], etichette: { routine: 'Routine', task: 'Task' } },
+    fare: { figli: ['routine', 'task', 'orario'], etichette: { routine: 'Routine', task: 'Task', orario: 'Orario fisso' } },
     salute: { figli: ['dieta', 'workout'], etichette: { dieta: 'Dieta', workout: 'Workout' } },
     crescita: { figli: ['obiettivi', 'diario'], etichette: { obiettivi: 'Obiettivi', diario: 'Diario' } },
-    altro: { figli: ['panoramica', 'impostazioni'], etichette: { panoramica: 'Panoramica', impostazioni: 'Impostazioni' } }
+    altro: { figli: ['panoramica', 'ia', 'impostazioni'], etichette: { panoramica: 'Panoramica', ia: 'Assistente IA', impostazioni: 'Impostazioni' } }
   };
   const FIGLIO_A_GRUPPO = {};
   Object.entries(GRUPPI).forEach(([g, def]) => def.figli.forEach(f => { FIGLIO_A_GRUPPO[f] = g; }));
@@ -38,9 +38,11 @@ const App = (function () {
     else if (nome === 'workout') UiWorkout.render();
     else if (nome === 'routine') UiRoutine.renderLista();
     else if (nome === 'task') UiTask.renderLista();
+    else if (nome === 'orario') UiOrario.render();
     else if (nome === 'obiettivi') UiObiettivi.renderLista();
     else if (nome === 'diario') UiJournal.renderForm(DataUtils.oggiISO());
     else if (nome === 'panoramica') UiPanoramica.render();
+    else if (nome === 'ia') UiIA.render();
     else if (nome === 'impostazioni') UiImpostazioni.render();
   }
 
@@ -77,6 +79,7 @@ const App = (function () {
   function aggiornaTutto() {
     UiRoutine.renderLista();
     UiTask.renderLista();
+    UiOrario.render();
     UiObiettivi.renderLista();
     UiJournal.renderStorico();
     UiOggi.renderTutto();
@@ -91,12 +94,24 @@ const App = (function () {
     if (actionId === 'fatto' || actionId === 'non_fatto') {
       const valore = actionId === 'fatto';
       await Dati.impostaCompletamento(extra.chiave, extra.dataISO, valore);
+      if (extra.chiave.startsWith('task:') && valore) {
+        const taskId = extra.chiave.split(':')[1];
+        const t = Dati.stato().task.find(x => x.id === taskId);
+        if (t) { t.completata = true; await Dati.salva(); await Notifiche.cancellaCascataTask(taskId); }
+      }
       UiOggi.renderTutto();
+    } else {
+      // Tap sul corpo della notifica (non su un'azione rapida): apre il
+      // dettaglio, utile soprattutto per pasto/allenamento/diario che hanno
+      // bisogno di un'interazione più ricca di un semplice fatto/non fatto.
+      mostraTab('oggi');
+      UiOggi.apriDettaglioAttivita(extra.chiave, extra.dataISO);
     }
   }
 
   async function init() {
     await Dati.carica();
+    document.documentElement.setAttribute('data-tema', Dati.stato().impostazioni.tema || 'chiaro');
     await Notifiche.inizializza(onAzioneNotifica);
 
     document.querySelectorAll('.tab-btn').forEach(b => {

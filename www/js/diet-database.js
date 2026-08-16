@@ -64,14 +64,28 @@ const DatabaseDieta = (function () {
 
   const CATEGORIE = ['colazione', 'spuntino1', 'pranzo', 'spuntino2', 'cena'];
   const ETICHETTE_CATEGORIA = { colazione: 'Colazione', spuntino1: 'Spuntino', pranzo: 'Pranzo', spuntino2: 'Spuntino', cena: 'Cena' };
-  // Quota indicativa di calorie giornaliere per ciascuna categoria (somma = 100%)
-  const QUOTA_CATEGORIA = { colazione: 0.25, spuntino1: 0.08, pranzo: 0.34, spuntino2: 0.08, cena: 0.25 };
+
+  // Combinazioni per numero di pasti al giorno scelto dall'utente (3-6).
+  const PRESET_NUMERO_PASTI = {
+    3: { categorie: ['colazione', 'pranzo', 'cena'], quote: { colazione: 0.30, pranzo: 0.40, cena: 0.30 } },
+    4: { categorie: ['colazione', 'pranzo', 'spuntino1', 'cena'], quote: { colazione: 0.25, pranzo: 0.35, spuntino1: 0.10, cena: 0.30 } },
+    5: { categorie: ['colazione', 'spuntino1', 'pranzo', 'spuntino2', 'cena'], quote: { colazione: 0.25, spuntino1: 0.08, pranzo: 0.34, spuntino2: 0.08, cena: 0.25 } },
+    6: { categorie: ['colazione', 'spuntino1', 'pranzo', 'spuntino2', 'cena', 'spuntino3'], quote: { colazione: 0.22, spuntino1: 0.08, pranzo: 0.30, spuntino2: 0.08, cena: 0.22, spuntino3: 0.10 } }
+  };
+  const ETICHETTE_CATEGORIA_ESTESA = Object.assign({ spuntino3: 'Spuntino' }, ETICHETTE_CATEGORIA);
+
+  function perNumeroPasti(numero) {
+    return PRESET_NUMERO_PASTI[numero] || PRESET_NUMERO_PASTI[5];
+  }
+
+  // Quota indicativa di calorie giornaliere per ciascuna categoria (retro-compatibilità, piano a 5 pasti)
+  const QUOTA_CATEGORIA = PRESET_NUMERO_PASTI[5].quote;
 
   function perCategoria(categoriaBase) {
     return PASTI.filter(p => p.categoria === categoriaBase);
   }
 
-  return { PASTI, ALLERGENI, CATEGORIE, ETICHETTE_CATEGORIA, QUOTA_CATEGORIA, perCategoria };
+  return { PASTI, ALLERGENI, CATEGORIE, ETICHETTE_CATEGORIA: ETICHETTE_CATEGORIA_ESTESA, QUOTA_CATEGORIA, perCategoria, perNumeroPasti, PRESET_NUMERO_PASTI };
 })();
 
 window.DatabaseDieta = DatabaseDieta;

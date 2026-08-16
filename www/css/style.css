@@ -446,3 +446,29 @@ input[type="range"].slider-priorita { width: 100%; accent-color: var(--accent); 
 .tabella-scheda tr:last-child td { border-bottom: none; }
 
 a { color: var(--accent-deep); }
+
+/* =========================================================
+   TEMA SCURO — stessi token, valori invertiti di luminosità.
+   Attivato mettendo data-tema="scuro" sull'elemento <html> (vedi app.js).
+   ========================================================= */
+html[data-tema="scuro"] {
+  --bg: #1b1f2a;
+  --surface: #242938;
+  --surface-alt: #2b3142;
+  --ink: #ECE9E2;
+  --ink-soft: #A8AEC0;
+  --ink-faint: #6B7288;
+  --border: #363c4f;
+  --border-strong: #454c63;
+
+  --accent: #C99A52;
+  --accent-deep: #E8BE7C;
+  --accent-soft: #3A2F1C;
+
+  --ok: #4FAE97;
+  --ok-soft: #1C332E;
+  --warn: #D97B63;
+  --warn-soft: #3A241D;
+  --travel: #8C99DE;
+  --travel-soft: #262B47;
+}

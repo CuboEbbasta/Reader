@@ -1,8 +1,11 @@
 /**
  * ui-oggi.js
- * Vista del giorno corrente: quadrante (grafico a torta 24h), timeline delle
- * attività di oggi (routine attive + task in scadenza oggi) con possibilità
- * di segnarle fatte/non fatte, e statistiche di aderenza della giornata.
+ * Vista del giorno corrente: quadrante (grafico a torta 24h, compatto),
+ * timeline delle attività di oggi (routine attive, orario fisso, task in
+ * scadenza oggi), statistiche di aderenza, e il popup di dettaglio che si
+ * apre toccando una voce (o la notifica): per routine di tipo Pasto/
+ * Allenamento chiede subito cosa hai mangiato/allenato, per tipo Diario
+ * apre direttamente il diario.
  */
 const UiOggi = (function () {
 
@@ -17,6 +20,7 @@ const UiOggi = (function () {
         chiave: `routine:${r.id}`,
         nome: r.nome,
         tipo: 'routine',
+        tipoAttivita: r.tipo || 'altro',
         priorita: r.priorita,
         inizioMin: DataUtils.oraToMinuti(r.oraInizio),
         fineMin: DataUtils.oraToMinuti(r.oraInizio) + r.durataMinuti,
@@ -118,7 +122,7 @@ const UiOggi = (function () {
       const colore = UiRoutine.coloreDaPriorita(v.priorita);
       const ora = v.conOrario ? DataUtils.formatOraMinutiInGiorno(v.inizioMin) : '—';
       return `
-      <div class="timeline-item" data-chiave="${v.chiave}">
+      <div class="timeline-item" data-chiave="${v.chiave}" style="cursor:pointer;">
         <div class="timeline-ora">${ora}</div>
         <div class="timeline-barra" style="background:${colore}"></div>
         <div class="timeline-corpo">
@@ -133,11 +137,15 @@ const UiOggi = (function () {
     }).join('');
 
     cont.querySelectorAll('.btn-segna').forEach(b => {
-      b.addEventListener('click', async () => {
+      b.addEventListener('click', async (e) => {
+        e.stopPropagation();
         const valore = b.dataset.valore === 'true';
         await Dati.impostaCompletamento(b.dataset.chiave, DataUtils.oggiISO(), valore);
         renderTutto();
       });
+    });
+    cont.querySelectorAll('.timeline-item').forEach(el => {
+      el.addEventListener('click', () => apriDettaglioAttivita(el.dataset.chiave, DataUtils.oggiISO()));
     });
   }
 
@@ -167,6 +175,112 @@ const UiOggi = (function () {
     }));
   }
 
+  // ---------------- Popup di dettaglio (click su una voce, o tap su una notifica) ----------------
+  function apriDettaglioAttivita(chiave, dataISO) {
+    dataISO = dataISO || DataUtils.oggiISO();
+    const [tipoChiave, id] = chiave.split(':');
+    if (tipoChiave === 'routine') {
+      const r = Dati.stato().routine.find(x => x.id === id);
+      if (!r) return;
+      if (r.tipo === 'diario') { window.App.mostraTab('diario'); return; }
+      apriPopupRoutine(r, dataISO);
+    } else if (tipoChiave === 'task') {
+      window.App.mostraTab('task');
+    }
+    // per l'orario fisso non c'e' un'azione contestuale speciale: si segna fatto/non fatto dalla timeline stessa
+  }
+
+  function corpoContestualePerTipo(r, chiave, dataISO) {
+    if (r.tipo === 'pasto') {
+      return `
+        <div class="divisore-testo">Cosa hai mangiato?</div>
+        <div class="campo"><input type="text" id="popup-pasto-nome" placeholder="Es. Pasta al pomodoro" value="${UiRoutine.escapeHtml(r.nome)}"></div>
+        <div class="griglia-2">
+          <div class="campo"><label>Kcal</label><input type="number" id="popup-pasto-kcal" value="0"></div>
+          <div class="campo"><label>Proteine (g)</label><input type="number" id="popup-pasto-prot" value="0"></div>
+        </div>
+        <div class="griglia-2">
+          <div class="campo"><label>Carboidrati (g)</label><input type="number" id="popup-pasto-carb" value="0"></div>
+          <div class="campo"><label>Grassi (g)</label><input type="number" id="popup-pasto-grassi" value="0"></div>
+        </div>
+        <button class="btn btn-ok btn-block" id="btn-popup-salva-pasto" style="margin-top:4px;">Salva e segna fatto</button>
+      `;
+    }
+    if (r.tipo === 'allenamento') {
+      const schedaAd = Dati.stato().schedaAdattiva;
+      const opzioniAdattiva = (schedaAd && schedaAd.giorni.length)
+        ? schedaAd.giorni.map((g, i) => `<option value="adattiva:${i}">${UiRoutine.escapeHtml(g.etichetta)}</option>`).join('') : '';
+      return `
+        <div class="divisore-testo">Che allenamento hai fatto?</div>
+        <select id="popup-allenamento-tipo" style="width:100%;padding:9px 10px;border:1px solid var(--border-strong);border-radius:8px;margin-bottom:10px;">
+          <option value="veloce">Scheda veloce</option>
+          <option value="completa">Scheda completa</option>
+          ${opzioniAdattiva}
+          <option value="personalizzato">Altro / personalizzato</option>
+        </select>
+        <button class="btn btn-ok btn-block" id="btn-popup-salva-allenamento">Salva e segna fatto</button>
+      `;
+    }
+    return '';
+  }
+
+  function apriPopupRoutine(r, dataISO) {
+    const chiave = `routine:${r.id}`;
+    const html = `
+      <div class="foglio-header">
+        <h2>${UiRoutine.escapeHtml(r.nome)}</h2>
+        <button class="icon-btn" id="btn-chiudi-foglio">✕</button>
+      </div>
+      ${r.descrizione ? `<div class="card-flat" style="margin-bottom:14px;">${UiRoutine.escapeHtml(r.descrizione)}</div>` : ''}
+      ${corpoContestualePerTipo(r, chiave, dataISO)}
+      <div class="riga-btn" style="margin-top:14px;">
+        <button class="btn btn-ok" id="btn-popup-fatto">✅ Fatto</button>
+        <button class="btn btn-warn" id="btn-popup-non-fatto">❌ Non fatto</button>
+      </div>
+    `;
+    window.App.apriFoglio(html);
+    document.getElementById('btn-chiudi-foglio').addEventListener('click', window.App.chiudiFoglio);
+    document.getElementById('btn-popup-fatto').addEventListener('click', async () => {
+      await Dati.impostaCompletamento(chiave, dataISO, true);
+      window.App.chiudiFoglio(); renderTutto();
+    });
+    document.getElementById('btn-popup-non-fatto').addEventListener('click', async () => {
+      await Dati.impostaCompletamento(chiave, dataISO, false);
+      window.App.chiudiFoglio(); renderTutto();
+    });
+
+    const btnPasto = document.getElementById('btn-popup-salva-pasto');
+    if (btnPasto) btnPasto.addEventListener('click', async () => {
+      const nome = document.getElementById('popup-pasto-nome').value.trim() || r.nome;
+      await Dati.aggiungiPastoLog(dataISO, {
+        nome,
+        kcal: parseInt(document.getElementById('popup-pasto-kcal').value, 10) || 0,
+        proteine: parseInt(document.getElementById('popup-pasto-prot').value, 10) || 0,
+        carboidrati: parseInt(document.getElementById('popup-pasto-carb').value, 10) || 0,
+        grassi: parseInt(document.getElementById('popup-pasto-grassi').value, 10) || 0,
+        fonte: 'routine'
+      });
+      await Dati.impostaCompletamento(chiave, dataISO, true);
+      window.App.chiudiFoglio(); window.App.mostraToast('Pasto registrato.'); renderTutto();
+    });
+
+    const btnAllenamento = document.getElementById('btn-popup-salva-allenamento');
+    if (btnAllenamento) btnAllenamento.addEventListener('click', async () => {
+      const val = document.getElementById('popup-allenamento-tipo').value;
+      let schedaTipo = val, etichetta;
+      if (val === 'veloce') etichetta = 'Scheda veloce';
+      else if (val === 'completa') etichetta = 'Scheda completa';
+      else if (val === 'personalizzato') etichetta = r.nome;
+      else if (val.startsWith('adattiva:')) {
+        schedaTipo = 'adattiva';
+        etichetta = Dati.stato().schedaAdattiva.giorni[parseInt(val.split(':')[1], 10)].etichetta;
+      }
+      await Dati.registraWorkoutGiorno(dataISO, { schedaTipo, etichetta, completato: true });
+      await Dati.impostaCompletamento(chiave, dataISO, true);
+      window.App.chiudiFoglio(); window.App.mostraToast('Allenamento registrato.'); renderTutto();
+    });
+  }
+
   function renderTutto() {
     document.getElementById('data-oggi').textContent = DataUtils.formatDataEstesa(DataUtils.oggiISO());
     renderTipoGiorno();
@@ -175,19 +289,31 @@ const UiOggi = (function () {
     renderTimeline(voci);
     renderStatistiche(voci);
 
-    // riprogramma le notifiche di oggi in base ai dati aggiornati
+    // Riprogramma le notifiche "di oggi" per routine/orario fisso (le task usano
+    // ora un sistema a parte, pianificato in anticipo — vedi notifications.js).
     const oggi = DataUtils.oggiISO();
-    const daNotificare = voci.filter(v => v.conOrario && statoCompletamento(v.chiave) === null).map(v => ({
-      chiave: v.chiave,
-      titolo: v.nome,
-      corpo: `Priorità ${v.priorita}/10 — tocca per segnare come fatto`,
-      orarioMin: v.inizioMin,
-      dataISO: oggi
-    }));
+    const s = Dati.stato();
+    const daNotificare = voci
+      .filter(v => v.conOrario && v.tipo !== 'task' && statoCompletamento(v.chiave) === null)
+      .map(v => {
+        let conAzioni = true;
+        if (v.tipo === 'routine') {
+          const r = s.routine.find(x => `routine:${x.id}` === v.chiave);
+          if (r && (r.tipo === 'pasto' || r.tipo === 'allenamento' || r.tipo === 'diario')) conAzioni = false;
+        }
+        return {
+          chiave: v.chiave,
+          titolo: v.nome,
+          corpo: conAzioni ? `Priorità ${v.priorita}/10 — tocca per segnare come fatto` : 'Tocca per aprire e rispondere',
+          orarioMin: v.inizioMin,
+          dataISO: oggi,
+          conAzioni
+        };
+      });
     Notifiche.programmaPerOggi(daNotificare);
   }
 
-  return { renderTutto, vociOggi, vociDiGiorno, calcolaStatistiche, statoCompletamento };
+  return { renderTutto, vociOggi, vociDiGiorno, calcolaStatistiche, statoCompletamento, apriDettaglioAttivita };
 })();
 
 window.UiOggi = UiOggi;

@@ -1,31 +1,84 @@
-# Assistente Personale — Prima versione (fondamenta)
+# Assistente Personale
 
-Questa è la quinta "fetta" del progetto — e con questa, tutte le funzionalità
-principali concordate sono implementate: **routine + task con cascata temporale
-+ vista di oggi (quadrante 24h) + notifiche offline**, **obiettivi (con tappe/
-timeline) + diario serale**, **dieta**, **workout**, e ora anche
-**Panoramica**: orario fisso settimanale (lezioni/lavoro, importabile da JSON),
-vista mese (calendario colorato per aderenza + torta di come hai speso il
-tempo), vista anno (periodi come sessioni d'esame/studio/lavoro su una
-timeline di 12 mesi + torta), e storico/recap (settimanale e mensile, con
-confronto rispetto al periodo precedente per capire se stai migliorando).
+App di produttività personale completa: routine e task, dieta, workout,
+obiettivi, diario, panoramica mese/anno/storico, e un assistente IA
+opzionale collegato a Ollama. Gira su Android (vera app installabile) e su
+PC (Electron, finestra vera senza browser), sempre **offline**: nessun dato
+lascia il dispositivo a meno che tu non attivi l'IA.
 
-Tutto funziona **offline, senza server**: i dati restano sul dispositivo, e per
-tenere allineati telefono e PC si usa l'esportazione/importazione manuale di un
-file .json (Impostazioni → Backup).
+## Moduli inclusi
+- **Oggi**: quadrante 24h compatto + timeline della giornata (routine,
+  orario fisso, task in scadenza), con notifiche puntuali.
+- **Fare**: Routine (con tipo — Allenamento/Pasto/Sonno/Diario fissi, o
+  creane altri tu — e descrizione visibile toccando la voce), Task (ambito
+  giorno/settimana con intervallo di date/mese/anno, mai nel passato,
+  organizzabili in "cartelle" tramite lo stesso sistema di tipi), Orario
+  fisso (lezioni/lavoro, importabile da JSON).
+- **Salute**: Dieta (profilo fisico, calorie/macro, piano settimanale a
+  scelta tra 3-6 pasti, log di cosa mangi, peso e misure opzionali) e
+  Workout (scheda veloce, scheda con sbarra, scheda adattiva sui tuoi
+  giorni, o una scheda tutta personalizzata con giorni duplicabili — tutte
+  calibrate sul tuo obiettivo se hai compilato il profilo Dieta).
+- **Crescita**: Obiettivi (1 mese → 10 anni, 3 tipi, tappe/timeline interne,
+  collegabili a routine e task) e Diario (statistiche automatiche, voto in
+  stile pagella, non modificabile per il futuro).
+- **Altro**: Panoramica (vista mese, vista anno con periodi tipo sessioni
+  d'esame, storico/recap con confronto sul periodo precedente), Assistente
+  IA (vedi sotto), Impostazioni (tema chiaro/scuro, backup, tipi di
+  attività, permessi notifiche).
 
-## Cosa NON c'è ancora
-Integrazione con Ollama (IA locale). Tutto il resto del progetto originale è
-al suo posto — quello che manca ora è la fase dedicata al design dell'interfaccia
-(vedi nota sotto), poi l'IA, poi APK + live testing.
+## Notifiche
+Ogni voce della giornata (routine, orario fisso) ha la sua notifica, con
+azioni rapide "Fatto/Non ora" per i tipi semplici. Le routine di tipo Pasto
+e Allenamento invece, quando tocchi la notifica, aprono un piccolo modulo
+per registrare subito cosa hai mangiato o quale scheda hai fatto; il tipo
+Diario apre direttamente il diario. Le task non hanno una notifica
+giornaliera: ricevono un avviso automatico ogni volta che "scendono" di
+ambito (es. da mese a settimana, da settimana a giorno), calcolato in
+anticipo, più un eventuale promemoria extra a scelta tua.
 
-## Nota sulla UI attuale
-Prima fase di riordino completata: navigazione ridotta da 9 a 5 tab principali
-(Oggi, Fare [Routine/Task], Salute [Dieta/Workout], Crescita [Obiettivi/Diario],
-Altro [Panoramica/Impostazioni], con sotto-navigazione a pillole dentro ognuna),
-e il quadrante 24h nella vista Oggi è ora un elemento compatto/laterale invece
-che centrale, come richiesto. Non è stato possibile generare un'anteprima
-visiva da qui (gli strumenti di rendering disponibili in questo ambiente non
+**Importante sui permessi**: la prima apertura chiede sia il permesso di
+notifica sia quello di "allarmi esatti" — servono entrambi, altrimenti
+Android fa arrivare solo la prima notifica e blocca le successive (era
+esattamente il problema riscontrato nel test precedente).
+
+## Assistente IA (opzionale)
+Non gira mai un modello sul telefono: Ollama non è pensato per Android
+senza installazioni aggiuntive (Termux), quindi l'app si collega sempre a
+un server Ollama esterno — di norma quello del tuo PC, raggiunto dal
+telefono via IP di rete locale quando siete sulla stessa WiFi.
+
+**Sul PC**:
+1. Installa Ollama da https://ollama.com
+2. In un terminale: `ollama pull qwen3:8b` (il modello di default scelto
+   qui — un buon compromesso tra qualità e requisiti hardware; se hai una
+   scheda video potente puoi provare un modello più grande, es.
+   `qwen3:30b`, altrimenti uno più leggero come `llama3.2:3b`)
+3. In Assistente Personale → Altro → Assistente IA: abilita, lascia
+   "http://localhost:11434" come indirizzo, scrivi il nome del modello
+   scelto, "Verifica connessione".
+
+**Dal telefono** (stessa WiFi del PC): nell'indirizzo server, invece di
+"localhost" metti l'IP del PC nella rete locale (su Windows: `ipconfig`,
+cerca "Indirizzo IPv4"; su Mac/Linux: `ifconfig` o Impostazioni di Rete),
+es. `http://192.168.1.50:11434`. Su Ollama potrebbe servire impostare la
+variabile d'ambiente `OLLAMA_HOST=0.0.0.0` prima di avviarlo, per accettare
+connessioni da altri dispositivi della rete (di default risponde solo a
+"localhost").
+
+L'IA può leggere i tuoi dati (routine, task, obiettivi) e proporre modifiche
+solo a campi di testo libero (nome/descrizione/note) — **non applica mai
+nulla da sola**: ogni proposta compare con un bottone "Applica" da toccare
+tu. Se preferisci un'IA interamente sul telefono, l'unica strada è
+installare tu Termux + Ollama con un modello minuscolo e puntare l'app a
+"http://localhost:11434" anche da telefono — funziona con lo stesso
+meccanismo, ma è una configurazione manuale che esula dall'app.
+
+## Nota sulla UI
+Navigazione a 5 tab principali con sotto-sezioni a pillole; il quadrante
+24h è un elemento compatto/laterale, non centrale. Tema chiaro/scuro
+disponibile in Impostazioni. Non è stato possibile generare un'anteprima
+visiva da questo ambiente (gli strumenti di rendering disponibili qui non
 eseguono JavaScript moderno): la resa reale si vede solo con la build.
 
 ## Prima di iniziare
@@ -105,10 +158,9 @@ scomodo secondo il browser), dimmelo e troviamo un'alternativa insieme.
 
 ### Dopo l'installazione (entrambe le opzioni)
 
-Alla prima apertura dell'app sul telefono, vai in **Impostazioni →
-"Verifica permessi notifiche"** e conferma sia il permesso di notifica sia
-quello di allarmi esatti: senza questi due, i promemoria non arrivano
-puntuali (è una richiesta di sicurezza di Android, non un limite dell'app).
+Alla prima apertura dell'app sul telefono ti verranno chiesti subito
+entrambi i permessi (notifica + allarmi esatti): concedili entrambi, altrimenti
+i promemoria arriveranno solo saltuariamente.
 
 ---
 
@@ -145,27 +197,26 @@ In **Impostazioni**:
 
 Dato che non ho un telefono/PC su cui testare, sono cose che si vedono solo
 sull'uso reale:
-- se le notifiche arrivano puntuali anche a schermo spento/app chiusa;
-- se dopo un riavvio del telefono le notifiche di quel giorno vengono
-  comunque programmate (l'app le programma quando la apri: se il telefono
-  resta spento tutto il giorno, ovviamente no; è un limite ragionevole, ma
-  fammi sapere se per te è un problema);
-- l'aspetto grafico su schermi di dimensioni diverse.
+- se le notifiche arrivano puntuali anche a schermo spento/app chiusa, ora
+  che chiediamo subito entrambi i permessi;
+- se la connessione al PC funziona bene dal telefono per l'IA (dipende
+  dalla configurazione di rete di casa tua, `OLLAMA_HOST` incluso);
+- l'aspetto grafico su schermi di dimensioni diverse, e il tema scuro.
 
 ## Struttura del progetto
 ```
 assistente-personale/
   www/                  interfaccia + logica (usata sia da Android che da PC)
   android/              progetto nativo Android (generato da Capacitor)
-  desktop/              wrapper Electron per PC
+  desktop/              wrapper Electron per PC (+ ponte IPC per l'IA)
   scripts/copy-vendor.js
   test-smoke.js         test automatico interno (facoltativo, vedi sotto)
 ```
 
 ### (Facoltativo) Ri-eseguire il test automatico
-Ho validato la logica (routine, cascata delle task, vista di oggi, notifiche,
-export/import) con un test automatico in un browser simulato. Se in futuro
-modifichi il codice e vuoi verificare che non si sia rotto nulla:
+Ho validato tutta la logica (cascata task/obiettivi, notifiche, dieta,
+workout, IA, tema, ecc.) con un test automatico in un browser simulato. Se
+in futuro modifichi il codice e vuoi verificare che non si sia rotto nulla:
 ```
 npm install --no-save jsdom
 node test-smoke.js

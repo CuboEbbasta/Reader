@@ -40,6 +40,23 @@ const UiImpostazioni = (function () {
       </div>
 
       <div class="card">
+        <h3>Aspetto</h3>
+        <div class="riga-btn">
+          <button class="btn btn-sm ${Dati.stato().impostazioni.tema === 'chiaro' ? 'btn-primary' : ''}" id="btn-tema-chiaro">☀️ Chiaro</button>
+          <button class="btn btn-sm ${Dati.stato().impostazioni.tema === 'scuro' ? 'btn-primary' : ''}" id="btn-tema-scuro">🌙 Scuro</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Tipi di attività</h3>
+        <p class="elemento-meta" style="margin-bottom:10px;">
+          Condivisi tra Routine e Task. Allenamento, Pasto, Sonno e Diario sono fissi;
+          quelli che crei tu si possono eliminare.
+        </p>
+        <div id="lista-tipi"></div>
+      </div>
+
+      <div class="card">
         <h3>Dati</h3>
         <div class="riga-btn">
           <button class="btn btn-warn" id="btn-reset">Cancella tutti i dati</button>
@@ -49,15 +66,21 @@ const UiImpostazioni = (function () {
       <div class="card card-flat">
         <div class="elemento-meta">
           Assistente Personale — versione dati ${Dati.stato().versione}.<br>
-          Moduli attuali: routine, task con cascata temporale, obiettivi (1 mese → 10 anni, con tappe/timeline),
+          Moduli attuali: routine (con tipo/descrizione), task con cascata temporale e cartelle,
+          orario fisso, obiettivi (1 mese → 10 anni, con tappe/timeline),
           diario serale, dieta (profilo, target, piano settimanale, log pasti),
-          workout (scheda veloce, scheda con sbarra, scheda adattiva, log),
-          panoramica (orario fisso, vista mese, vista anno, storico/recap),
+          workout (scheda veloce, scheda con sbarra, scheda adattiva, personalizzata, log),
+          panoramica (vista mese, vista anno, storico/recap), assistente IA (collegabile a Ollama),
           vista di oggi e notifiche offline.<br>
-          Prossimo grande passo: integrazione con un'IA locale (facoltativa).
+          Tema chiaro/scuro disponibile qui sopra.
         </div>
       </div>
     `;
+
+    renderListaTipi();
+
+    document.getElementById('btn-tema-chiaro').addEventListener('click', () => impostaTema('chiaro'));
+    document.getElementById('btn-tema-scuro').addEventListener('click', () => impostaTema('scuro'));
 
     document.getElementById('btn-esporta').addEventListener('click', async () => {
       window.App.mostraToast('Preparazione del backup…');
@@ -109,7 +132,33 @@ const UiImpostazioni = (function () {
     });
   }
 
-  return { render };
+  function renderListaTipi() {
+    const cont = document.getElementById('lista-tipi');
+    const tipi = Dati.stato().tipiAttivita;
+    cont.innerHTML = tipi.map(t => `
+      <div class="legenda-riga">
+        <span class="legenda-swatch" style="background:${UiTipi.coloreTipo(t.id)}"></span>
+        <span class="legenda-nome">${UiRoutine.escapeHtml(t.nome)}</span>
+        ${t.protetto ? '<span class="badge badge-accent">fisso</span>' : `<button class="icon-btn btn-elimina-tipo" data-id="${t.id}" title="Elimina">🗑️</button>`}
+      </div>
+    `).join('');
+    cont.querySelectorAll('.btn-elimina-tipo').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('Eliminare questo tipo? Le routine/task che lo usano torneranno a "Altro".')) return;
+      const risultato = await Dati.eliminaTipoAttivita(b.dataset.id);
+      if (!risultato.ok) { window.App.mostraToast(risultato.errore); return; }
+      renderListaTipi();
+      window.App.aggiornaTutto();
+    }));
+  }
+
+  async function impostaTema(tema) {
+    Dati.stato().impostazioni.tema = tema;
+    await Dati.salva();
+    document.documentElement.setAttribute('data-tema', tema);
+    render();
+  }
+
+  return { render, impostaTema };
 })();
 
 window.UiImpostazioni = UiImpostazioni;

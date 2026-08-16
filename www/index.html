@@ -57,9 +57,21 @@
       <div class="riga-btn" style="margin-bottom:12px;">
         <button class="btn btn-accent btn-block" id="btn-nuova-task">+ Nuova task</button>
       </div>
-      <div class="riga-btn" id="filtri-task" style="margin-bottom:10px;"></div>
+      <div class="riga-btn" id="filtri-task" style="margin-bottom:6px;"></div>
+      <div class="riga-btn" id="filtri-task-cartella" style="margin-bottom:10px;flex-wrap:wrap;"></div>
       <div id="lista-task"></div>
     </div>
+  </div>
+
+  <!-- ===================== ORARIO FISSO ===================== -->
+  <div class="view" id="view-orario">
+    <div class="page-header">
+      <span class="eyebrow">Fare</span>
+      <h1>Orario fisso</h1>
+      <div class="sub">Lezioni, turni di lavoro o impegni che si ripetono ogni settimana.</div>
+      <div class="sub-nav-pills" id="subnav-orario"></div>
+    </div>
+    <div id="orario-corpo"></div>
   </div>
 
   <!-- ===================== DIETA ===================== -->
@@ -96,7 +108,8 @@
       <div class="riga-btn" style="margin-bottom:12px;">
         <button class="btn btn-accent btn-block" id="btn-nuovo-obiettivo">+ Nuovo obiettivo</button>
       </div>
-      <div class="riga-btn" id="filtri-obiettivi" style="margin-bottom:10px;"></div>
+      <div class="riga-btn" id="filtri-obiettivi" style="margin-bottom:6px;"></div>
+      <div class="riga-btn" id="filtri-obiettivi-ambito" style="margin-bottom:10px;flex-wrap:wrap;"></div>
       <div id="lista-obiettivi"></div>
     </div>
   </div>
@@ -134,6 +147,17 @@
       <div class="sub-nav-pills" id="subnav-panoramica"></div>
     </div>
     <div id="panoramica-corpo"></div>
+  </div>
+
+  <!-- ===================== IA ===================== -->
+  <div class="view" id="view-ia">
+    <div class="page-header">
+      <span class="eyebrow">Altro</span>
+      <h1>Assistente IA</h1>
+      <div class="sub">Si collega a un server Ollama esterno (di norma il tuo PC) — mai un modello sul telefono.</div>
+      <div class="sub-nav-pills" id="subnav-ia"></div>
+    </div>
+    <div id="ia-corpo"></div>
   </div>
 
   <!-- ===================== IMPOSTAZIONI ===================== -->
@@ -185,7 +209,9 @@
 <script src="js/workout-calc.js"></script>
 <script src="js/workout-plan.js"></script>
 <script src="js/recap-calc.js"></script>
+<script src="js/ui-tipi.js"></script>
 <script src="js/ui-routine.js"></script>
+<script src="js/ui-orario.js"></script>
 <script src="js/ui-task.js"></script>
 <script src="js/ui-oggi.js"></script>
 <script src="js/ui-obiettivi.js"></script>
@@ -193,6 +219,8 @@
 <script src="js/ui-dieta.js"></script>
 <script src="js/ui-workout.js"></script>
 <script src="js/ui-panoramica.js"></script>
+<script src="js/ollama-client.js"></script>
+<script src="js/ui-ia.js"></script>
 <script src="js/ui-impostazioni.js"></script>
 <script src="js/app.js"></script>
 

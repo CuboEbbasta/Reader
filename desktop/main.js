@@ -65,3 +65,30 @@ ipcMain.handle('esporta-json', async (event, nomeFileSuggerito, contenuto) => {
     return { ok: false, errore: e.message };
   }
 });
+
+// ---- IA: chiamate a Ollama dal processo main (Node ha fetch nativo, nessun problema di CORS) ----
+ipcMain.handle('chiama-ia', async (event, { indirizzoServer, corpo }) => {
+  try {
+    const risposta = await fetch(indirizzoServer.replace(/\/+$/, '') + '/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corpo)
+    });
+    if (!risposta.ok) return { ok: false, errore: 'Il server ha risposto con codice ' + risposta.status };
+    const dati = await risposta.json();
+    return { ok: true, testo: dati.response };
+  } catch (e) {
+    return { ok: false, errore: 'Impossibile raggiungere il server IA: ' + e.message };
+  }
+});
+
+ipcMain.handle('elenca-modelli-ia', async (event, indirizzoServer) => {
+  try {
+    const risposta = await fetch(indirizzoServer.replace(/\/+$/, '') + '/api/tags');
+    if (!risposta.ok) return { ok: false, errore: 'Il server ha risposto con codice ' + risposta.status };
+    const dati = await risposta.json();
+    return { ok: true, modelli: (dati.models || []).map(m => m.name) };
+  } catch (e) {
+    return { ok: false, errore: 'Impossibile raggiungere ' + indirizzoServer + ' (' + e.message + ')' };
+  }
+});

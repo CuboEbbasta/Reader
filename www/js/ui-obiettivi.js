@@ -13,6 +13,7 @@
  */
 const UiObiettivi = (function () {
   let filtroTipo = 'tutti'; // 'tutti' | 'concreto' | 'generale' | 'valoriale'
+  let filtroAmbito = 'tutti'; // 'tutti' | '1mese' | '6mesi' | '1anno' | '5anni' | '10anni'
 
   const ETICHETTE_TIPO = { concreto: 'Concreto', generale: 'Generale', valoriale: 'Valoriale' };
   const DESCRIZIONE_TIPO = {
@@ -45,6 +46,15 @@ const UiObiettivi = (function () {
       `<button type="button" class="btn btn-sm ${filtroTipo === v ? 'btn-primary' : ''}" data-f="${v}">${l}</button>`
     ).join('');
     cont.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { filtroTipo = b.dataset.f; renderLista(); }));
+
+    const contAmbito = document.getElementById('filtri-obiettivi-ambito');
+    if (!contAmbito) return;
+    let htmlAmbito = `<button type="button" class="btn btn-sm ${filtroAmbito === 'tutti' ? 'btn-primary' : ''}" data-fa="tutti">Ogni orizzonte</button>`;
+    htmlAmbito += CascataObiettivi.ORDINE.slice().reverse().map(a =>
+      `<button type="button" class="btn btn-sm ${filtroAmbito === a ? 'btn-primary' : ''}" data-fa="${a}">${CascataObiettivi.ETICHETTE_AMBITO[a]}</button>`
+    ).join('');
+    contAmbito.innerHTML = htmlAmbito;
+    contAmbito.querySelectorAll('[data-fa]').forEach(b => b.addEventListener('click', () => { filtroAmbito = b.dataset.fa; renderLista(); }));
   }
 
   function renderLista() {
@@ -54,6 +64,7 @@ const UiObiettivi = (function () {
     let obiettivi = Dati.stato().obiettivi.map(o => ({ o, stato: CascataObiettivi.statoObiettivo(o, oggi) }));
 
     if (filtroTipo !== 'tutti') obiettivi = obiettivi.filter(x => x.o.tipo === filtroTipo);
+    if (filtroAmbito !== 'tutti') obiettivi = obiettivi.filter(x => x.stato.ambitoEffettivo === filtroAmbito);
 
     obiettivi.sort((a, b) => {
       if (a.o.completato !== b.o.completato) return a.o.completato ? 1 : -1;
@@ -111,10 +122,11 @@ const UiObiettivi = (function () {
     const oggi = DataUtils.oggiISO();
     const o = esistente || {
       id: null, titolo: '', tipo: 'concreto', ambito: '1anno',
-      scadenza: defaultScadenzaPerAmbito('1anno', oggi), descrizione: '', completato: false, taskCollegate: []
+      scadenza: defaultScadenzaPerAmbito('1anno', oggi), descrizione: '', completato: false, attivitaCollegate: []
     };
 
     const tutteLeTask = Dati.stato().task;
+    const tutteLeRoutine = Dati.stato().routine;
     const html = `
       <div class="foglio-header">
         <h2>${esistente ? 'Modifica obiettivo' : 'Nuovo obiettivo'}</h2>
@@ -147,11 +159,12 @@ const UiObiettivi = (function () {
         <label>Note / come vorrei scomporlo (facoltativo)</label>
         <textarea id="f-descrizione" placeholder="Idee, tappe intermedie, promemoria per te stesso...">${UiRoutine.escapeHtml(o.descrizione || '')}</textarea>
       </div>
-      ${tutteLeTask.length ? `
+      ${(tutteLeTask.length || tutteLeRoutine.length) ? `
       <div class="campo">
-        <label>Task collegate (facoltativo)</label>
-        <select id="f-task-collegate" multiple size="4">
-          ${tutteLeTask.map(t => `<option value="${t.id}" ${(o.taskCollegate||[]).includes(t.id)?'selected':''}>${UiRoutine.escapeHtml(t.nome)}</option>`).join('')}
+        <label>Attività collegate (facoltativo)</label>
+        <select id="f-attivita-collegate" multiple size="5">
+          ${tutteLeRoutine.length ? `<optgroup label="Routine">${tutteLeRoutine.map(r => `<option value="routine:${r.id}" ${(o.attivitaCollegate||[]).includes('routine:'+r.id)?'selected':''}>${UiRoutine.escapeHtml(r.nome)}</option>`).join('')}</optgroup>` : ''}
+          ${tutteLeTask.length ? `<optgroup label="Task">${tutteLeTask.map(t => `<option value="task:${t.id}" ${(o.attivitaCollegate||[]).includes('task:'+t.id)?'selected':''}>${UiRoutine.escapeHtml(t.nome)}</option>`).join('')}</optgroup>` : ''}
         </select>
         <div class="elemento-meta" style="margin-top:4px;">Tieni premuto/Ctrl+click per selezionarne più di una.</div>
       </div>` : ''}
@@ -178,15 +191,15 @@ const UiObiettivi = (function () {
     const ambito = document.getElementById('f-ambito').value;
     const scadenza = document.getElementById('f-scadenza').value || defaultScadenzaPerAmbito(ambito);
     const descrizione = document.getElementById('f-descrizione').value.trim();
-    const selectTask = document.getElementById('f-task-collegate');
-    const taskCollegate = selectTask ? Array.from(selectTask.selectedOptions).map(o => o.value) : [];
+    const selectAttivita = document.getElementById('f-attivita-collegate');
+    const attivitaCollegate = selectAttivita ? Array.from(selectAttivita.selectedOptions).map(o => o.value) : [];
 
     const s = Dati.stato();
     if (idEsistente) {
       const o = s.obiettivi.find(x => x.id === idEsistente);
-      Object.assign(o, { titolo, tipo, ambito, scadenza, descrizione, taskCollegate });
+      Object.assign(o, { titolo, tipo, ambito, scadenza, descrizione, attivitaCollegate });
     } else {
-      s.obiettivi.push({ id: Dati.generaId('obiettivo'), titolo, tipo, ambito, scadenza, descrizione, completato: false, taskCollegate, tappe: [] });
+      s.obiettivi.push({ id: Dati.generaId('obiettivo'), titolo, tipo, ambito, scadenza, descrizione, completato: false, attivitaCollegate, tappe: [] });
     }
     Dati.salva().then(() => {
       window.App.chiudiFoglio();

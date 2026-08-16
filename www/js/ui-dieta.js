@@ -55,6 +55,37 @@ const UiDieta = (function () {
         </select>
       </div>
       <div class="campo">
+        <label>Quanti pasti al giorno</label>
+        <select id="f-numero-pasti">
+          ${[3,4,5,6].map(n => `<option value="${n}" ${(p.numeroPasti||5)===n?'selected':''}>${n} pasti</option>`).join('')}
+        </select>
+      </div>
+      <div class="divisore-testo">Facoltativo</div>
+      <div class="griglia-2">
+        <div class="campo">
+          <label>% massa grassa</label>
+          <input type="number" id="f-perc-grassa" step="0.1" min="0" max="70" value="${p.percentualeGrassa != null ? p.percentualeGrassa : ''}" placeholder="Se la conosci">
+        </div>
+        <div class="campo">
+          <label>Vita (cm)</label>
+          <input type="number" id="f-circ-vita" step="0.5" value="${(p.circonferenze && p.circonferenze.vita != null) ? p.circonferenze.vita : ''}">
+        </div>
+      </div>
+      <div class="griglia-2">
+        <div class="campo">
+          <label>Fianchi (cm)</label>
+          <input type="number" id="f-circ-fianchi" step="0.5" value="${(p.circonferenze && p.circonferenze.fianchi != null) ? p.circonferenze.fianchi : ''}">
+        </div>
+        <div class="campo">
+          <label>Torace (cm)</label>
+          <input type="number" id="f-circ-torace" step="0.5" value="${(p.circonferenze && p.circonferenze.torace != null) ? p.circonferenze.torace : ''}">
+        </div>
+      </div>
+      <div class="campo">
+        <label>Braccio (cm)</label>
+        <input type="number" id="f-circ-braccio" step="0.5" value="${(p.circonferenze && p.circonferenze.braccio != null) ? p.circonferenze.braccio : ''}">
+      </div>
+      <div class="campo">
         <label>Allergie / intolleranze (escluse automaticamente dal piano)</label>
         <div class="giorni-settimana">
           ${DatabaseDieta.ALLERGENI.map(a => `<button type="button" class="giorno-toggle ${(p.allergie||[]).includes(a.id)?'selezionato':''}" data-allergene="${a.id}" style="width:auto;padding:0 10px;">${a.nome}</button>`).join('')}
@@ -90,9 +121,17 @@ const UiDieta = (function () {
       sesso: document.getElementById('f-sesso').value,
       livelloAttivita: document.getElementById('f-attivita').value,
       obiettivo: document.getElementById('f-obiettivo').value,
+      numeroPasti: parseInt(document.getElementById('f-numero-pasti').value, 10) || 5,
       allergie,
       cibiNonGraditi: document.getElementById('f-non-graditi').value.trim(),
-      patologie: document.getElementById('f-patologie').value.trim()
+      patologie: document.getElementById('f-patologie').value.trim(),
+      percentualeGrassa: document.getElementById('f-perc-grassa').value ? parseFloat(document.getElementById('f-perc-grassa').value) : null,
+      circonferenze: {
+        vita: document.getElementById('f-circ-vita').value ? parseFloat(document.getElementById('f-circ-vita').value) : null,
+        fianchi: document.getElementById('f-circ-fianchi').value ? parseFloat(document.getElementById('f-circ-fianchi').value) : null,
+        torace: document.getElementById('f-circ-torace').value ? parseFloat(document.getElementById('f-circ-torace').value) : null,
+        braccio: document.getElementById('f-circ-braccio').value ? parseFloat(document.getElementById('f-circ-braccio').value) : null
+      }
     });
     await Dati.registraPeso(DataUtils.oggiISO(), pesoKg);
     window.App.chiudiFoglio();
@@ -104,6 +143,14 @@ const UiDieta = (function () {
   function renderPeso() {
     const p = Dati.stato().profilo;
     const storico = p.storicoPeso.slice().sort((a, b) => b.data.localeCompare(a.data)).slice(0, 6);
+    const c = p.circonferenze || {};
+    const misureImpostate = [
+      p.percentualeGrassa != null ? `Massa grassa: <strong>${p.percentualeGrassa}%</strong>` : null,
+      c.vita != null ? `Vita: <strong>${c.vita} cm</strong>` : null,
+      c.fianchi != null ? `Fianchi: <strong>${c.fianchi} cm</strong>` : null,
+      c.torace != null ? `Torace: <strong>${c.torace} cm</strong>` : null,
+      c.braccio != null ? `Braccio: <strong>${c.braccio} cm</strong>` : null
+    ].filter(Boolean);
     return `
       <div class="card">
         <h3>Andamento peso</h3>
@@ -118,6 +165,10 @@ const UiDieta = (function () {
         ${storico.length ? `
         <div class="divisore-testo">Ultime misurazioni</div>
         ${storico.map(v => `<div class="legenda-riga"><span class="legenda-nome">${DataUtils.formatDataBreve(v.data)}</span><span class="legenda-tempo">${v.peso} kg</span></div>`).join('')}
+        ` : ''}
+        ${misureImpostate.length ? `
+        <div class="divisore-testo">Altre misure</div>
+        <div class="elemento-meta">${misureImpostate.join(' · ')}</div>
         ` : ''}
       </div>
     `;

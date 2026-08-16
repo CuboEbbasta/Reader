@@ -33,6 +33,8 @@ const UiJournal = (function () {
     const oggi = DataUtils.oggiISO();
     document.getElementById('diario-data').textContent = DataUtils.formatDataEstesa(dataISO) + (dataISO === oggi ? ' (oggi)' : '');
     document.getElementById('diario-btn-oggi').style.display = dataISO === oggi ? 'none' : '';
+    const btnNext = document.getElementById('diario-next');
+    if (btnNext) { btnNext.disabled = dataISO >= oggi; btnNext.style.opacity = dataISO >= oggi ? '0.35' : ''; }
   }
 
   function renderForm(dataISO) {
@@ -121,6 +123,8 @@ const UiJournal = (function () {
   }
 
   function vaiA(dataISO) {
+    const oggi = DataUtils.oggiISO();
+    if (dataISO > oggi) dataISO = oggi;
     renderForm(dataISO);
   }
 

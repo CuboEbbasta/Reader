@@ -6,5 +6,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  esportaJSON: (nomeFile, contenuto) => ipcRenderer.invoke('esporta-json', nomeFile, contenuto)
+  esportaJSON: (nomeFile, contenuto) => ipcRenderer.invoke('esporta-json', nomeFile, contenuto),
+  chiamaIA: (payload) => ipcRenderer.invoke('chiama-ia', payload),
+  elencaModelliIA: (indirizzoServer) => ipcRenderer.invoke('elenca-modelli-ia', indirizzoServer)
 });

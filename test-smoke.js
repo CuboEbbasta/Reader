@@ -269,21 +269,23 @@ async function main() {
   const workoutOggi = window.Dati.stato().workoutLog[oggi];
   assert(workoutOggi && workoutOggi.schedaTipo === 'veloce', 'il log di oggi deve registrare la scheda veloce come fatta');
 
-  // ---- Panoramica: orario fisso (import JSON + parsing giorni), mese, anno, storico ----
+  // ---- Orario fisso (ora dentro "Fare"): import JSON + parsing giorni ----
   assert(window.DataUtils.giornoDaTesto('lunedì') === 1, 'giornoDaTesto deve riconoscere "lunedì" come 1');
   assert(window.DataUtils.giornoDaTesto('Mar') === 2, 'giornoDaTesto deve riconoscere l\'abbreviazione "Mar" come 2');
   assert(window.DataUtils.giornoDaTesto(5) === 5, 'giornoDaTesto deve accettare direttamente un numero valido');
   assert(window.DataUtils.giornoDaTesto('non-un-giorno') === null, 'giornoDaTesto deve restituire null per testo non riconosciuto');
 
-  window.App.mostraTab('panoramica');
-  const risultatoImportOrario = window.UiPanoramica.importaOrarioDaJSON(JSON.stringify([
+  window.App.mostraTab('orario');
+  const risultatoImportOrario = window.UiOrario.importaDaJSON(JSON.stringify([
     { materia: 'Analisi Matematica', giorno: 'lunedì', oraInizio: '09:00', oraFine: '11:00', aula: 'Aula 3', tipo: 'universita' },
     { materia: 'Voce incompleta senza orario', giorno: 'martedì' }
   ]));
   assert(risultatoImportOrario.ok && risultatoImportOrario.importati === 1 && risultatoImportOrario.scartati === 1, 'import orario deve importare la voce valida e scartare quella incompleta (trovato: ' + JSON.stringify(risultatoImportOrario) + ')');
   await window.Dati.salva();
+  window.UiOrario.render();
+  assert(window.document.getElementById('orario-corpo').innerHTML.includes('Analisi Matematica'), 'la vista Orario fisso deve mostrare la voce importata');
 
-  window.UiPanoramica.render();
+  window.App.mostraTab('panoramica');
   const panoramicaHtml = window.document.getElementById('panoramica-corpo').innerHTML;
   assert(panoramicaHtml.includes(window.DataUtils.nomeMeseAnno(window.DataUtils.oggiISO())), 'la vista Mese deve mostrare mese e anno correnti');
 
@@ -328,6 +330,161 @@ async function main() {
   window.App.mostraTab('workout');
   window.App.mostraTab('salute');
   assert(window.document.getElementById('view-workout').classList.contains('attiva'), '"salute" deve ricordare "workout" come nuovo ultimo figlio visitato');
+
+  // ================================================================
+  // NUOVE FEATURE DI QUESTA SESSIONE
+  // ================================================================
+
+  // ---- Tipi di attività condivisi ----
+  const tipiIniziali = window.Dati.stato().tipiAttivita.map(t => t.id);
+  assert(['allenamento','pasto','sonno','diario'].every(id => tipiIniziali.includes(id)), 'i 4 tipi protetti devono esistere di default');
+  const nuovoTipoId = await window.Dati.aggiungiTipoAttivita('Università');
+  assert(window.Dati.stato().tipiAttivita.some(t => t.id === nuovoTipoId && !t.protetto), 'un tipo creato dall\'utente non deve essere protetto');
+  const tentativoEliminaProtetto = await window.Dati.eliminaTipoAttivita('pasto');
+  assert(tentativoEliminaProtetto.ok === false, 'non deve essere possibile eliminare un tipo protetto');
+
+  // ---- Routine: tipo, descrizione, vincolo "un solo diario" ----
+  const s3 = window.Dati.stato();
+  s3.routine.push({ id: 'r_pasto', nome: 'Pranzo', tipo: 'pasto', descrizione: 'Pranzo principale', oraInizio: '13:00', durataMinuti: 30, priorita: 6, giorni: [1,2,3,4,5,6,7], attiva: true });
+  s3.routine.push({ id: 'r_allenamento', nome: 'Palestra', tipo: 'allenamento', descrizione: '', oraInizio: '18:00', durataMinuti: 60, priorita: 7, giorni: [1,2,3,4,5,6,7], attiva: true });
+  s3.routine.push({ id: 'r_diario1', nome: 'Diario serale', tipo: 'diario', descrizione: '', oraInizio: '22:00', durataMinuti: 10, priorita: 4, giorni: [1,2,3,4,5,6,7], attiva: true });
+  await window.Dati.salva();
+
+  window.App.mostraTab('routine');
+  window.UiRoutine.apriForm(null);
+  window.document.getElementById('f-nome').value = 'Secondo diario';
+  window.document.getElementById('f-tipo-routine').value = 'diario';
+  window.document.getElementById('btn-salva-routine').dispatchEvent(new window.Event('click', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
+  assert(window.Dati.stato().routine.filter(r => r.tipo === 'diario').length === 1, 'non deve essere possibile creare una seconda routine di tipo "diario"');
+  window.App.chiudiFoglio();
+
+  // ---- Popup di dettaglio: contestuale per pasto/allenamento, redirect per diario ----
+  window.App.mostraTab('oggi');
+  window.UiOggi.apriDettaglioAttivita('routine:r_pasto', oggi);
+  assert(!!window.document.getElementById('btn-popup-salva-pasto'), 'il popup per una routine "pasto" deve avere il quick-log del pasto');
+  window.App.chiudiFoglio();
+
+  window.UiOggi.apriDettaglioAttivita('routine:r_allenamento', oggi);
+  assert(!!window.document.getElementById('popup-allenamento-tipo'), 'il popup per una routine "allenamento" deve avere il selettore scheda');
+  window.App.chiudiFoglio();
+
+  window.UiOggi.apriDettaglioAttivita('routine:r_diario1', oggi);
+  assert(window.document.getElementById('view-diario').classList.contains('attiva'), 'toccare una routine "diario" deve aprire direttamente il Diario');
+
+  // ---- Notifiche di cascata per le task: date di transizione corrette ----
+  const taskCascataTest = { id: 'tc1', nome: 'Test cascata', ambito: 'mese', scadenza: window.DataUtils.addGiorni(oggi, 40) };
+  const transizioni = window.Notifiche.calcolaTransizioniTask(taskCascataTest);
+  assert(transizioni.length === 2, 'una task con ambito "mese" deve avere 2 transizioni (mese->settimana, settimana->giorno)');
+  assert(transizioni[0].livello === 'settimana' && transizioni[0].data === window.DataUtils.addGiorni(oggi, 33), 'la transizione a "settimana" deve avvenire 7gg prima della scadenza (trovato: ' + JSON.stringify(transizioni[0]) + ')');
+  assert(transizioni[1].livello === 'giorno' && transizioni[1].data === window.DataUtils.addGiorni(oggi, 39), 'la transizione a "giorno" deve avvenire 1gg prima della scadenza');
+
+  // ---- Task: ambito anno/mese/settimana tramite i nuovi selettori data ----
+  window.App.mostraTab('task');
+  window.UiTask.apriForm(null);
+  window.document.getElementById('f-nome').value = 'Task annuale test';
+  window.document.getElementById('f-ambito').value = 'anno';
+  window.document.getElementById('f-ambito').dispatchEvent(new window.Event('change', { bubbles: true }));
+  const annoTarget = parseInt(oggi.slice(0,4), 10) + 2;
+  window.document.getElementById('f-scad-anno').value = String(annoTarget);
+  window.document.getElementById('btn-salva-task').dispatchEvent(new window.Event('click', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
+  const taskAnnuale = window.Dati.stato().task.find(t => t.nome === 'Task annuale test');
+  assert(taskAnnuale && taskAnnuale.scadenza === `${annoTarget}-12-31`, 'una task "anno" deve salvare come scadenza il 31 dicembre dell\'anno scelto (trovato: ' + (taskAnnuale && taskAnnuale.scadenza) + ')');
+
+  window.UiTask.apriForm(null);
+  window.document.getElementById('f-nome').value = 'Task mese test';
+  window.document.getElementById('f-ambito').value = 'mese';
+  window.document.getElementById('f-ambito').dispatchEvent(new window.Event('change', { bubbles: true }));
+  const meseTarget = window.DataUtils.addMesi(oggi, 2).slice(0,7);
+  window.document.getElementById('f-scad-mese').value = meseTarget;
+  window.document.getElementById('btn-salva-task').dispatchEvent(new window.Event('click', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
+  const taskMensile = window.Dati.stato().task.find(t => t.nome === 'Task mese test');
+  assert(taskMensile && taskMensile.scadenza === window.DataUtils.fineMese(meseTarget + '-01'), 'una task "mese" deve salvare come scadenza l\'ultimo giorno del mese scelto (trovato: ' + (taskMensile && taskMensile.scadenza) + ')');
+
+  window.UiTask.apriForm(null);
+  window.document.getElementById('f-nome').value = 'Task settimana test';
+  window.document.getElementById('f-ambito').value = 'settimana';
+  window.document.getElementById('f-ambito').dispatchEvent(new window.Event('change', { bubbles: true }));
+  const rangeInizio = window.DataUtils.addGiorni(oggi, 3), rangeFine = window.DataUtils.addGiorni(oggi, 10);
+  window.document.getElementById('f-scad-range-inizio').value = rangeInizio;
+  window.document.getElementById('f-scad-range-fine').value = rangeFine;
+  window.document.getElementById('btn-salva-task').dispatchEvent(new window.Event('click', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
+  const taskSettimanale = window.Dati.stato().task.find(t => t.nome === 'Task settimana test');
+  assert(taskSettimanale && taskSettimanale.scadenza === rangeFine && taskSettimanale.rangeInizio === rangeInizio, 'una task "settimana" deve salvare il range scelto (trovato: ' + JSON.stringify(taskSettimanale) + ')');
+
+  // ---- Task: cartelle (tipo condiviso) ----
+  window.UiTask.apriForm(null);
+  window.document.getElementById('f-nome').value = 'Task con cartella';
+  window.document.getElementById('f-tipo-task').value = nuovoTipoId;
+  window.document.getElementById('btn-salva-task').dispatchEvent(new window.Event('click', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
+  window.UiTask.renderLista();
+  const bottoneCartella = window.document.querySelector(`[data-ft="${nuovoTipoId}"]`);
+  assert(!!bottoneCartella, 'deve comparire un filtro-cartella per il tipo personalizzato creato');
+  bottoneCartella.dispatchEvent(new window.Event('click', { bubbles: true }));
+  assert(window.document.getElementById('lista-task').innerHTML.includes('Task con cartella'), 'filtrando per la cartella "Università" deve comparire la task assegnata');
+
+  // ---- Obiettivi: collegamento anche a routine, non solo task ----
+  window.App.mostraTab('obiettivi');
+  window.UiObiettivi.apriForm(null);
+  const selectAttivita = window.document.getElementById('f-attivita-collegate');
+  assert(selectAttivita && selectAttivita.innerHTML.includes('Palestra') && selectAttivita.innerHTML.includes('optgroup'), 'il selettore attività collegate deve includere anche le routine, non solo le task');
+  window.App.chiudiFoglio();
+
+  // ---- Diario come routine: limitato a oggi/passato, mai al futuro ----
+  window.App.mostraTab('diario');
+  window.UiJournal.renderForm(window.DataUtils.addGiorni(oggi, -2));
+  window.document.getElementById('diario-next').dispatchEvent(new window.Event('click', { bubbles: true }));
+  window.document.getElementById('diario-next').dispatchEvent(new window.Event('click', { bubbles: true }));
+  window.document.getElementById('diario-next').dispatchEvent(new window.Event('click', { bubbles: true }));
+  assert(window.document.getElementById('diario-data').textContent.includes('(oggi)'), 'il diario non deve mai poter avanzare oltre oggi, qualunque numero di click su "avanti"');
+
+  // ---- Dieta: numero pasti configurabile ----
+  const profiloTre = Object.assign({}, window.Dati.stato().profilo, { numeroPasti: 3 });
+  await window.Dati.salvaProfilo(profiloTre);
+  const pianoTrePasti = window.GeneratorePiano.generaPianoSettimanale(window.Dati.stato().profilo);
+  assert(pianoTrePasti.giorni[1].length === 3, 'con numeroPasti=3 il piano generato deve avere 3 pasti al giorno (trovati: ' + pianoTrePasti.giorni[1].length + ')');
+
+  // ---- Workout: modalità personalizzata con duplica giorno ----
+  window.App.mostraTab('workout');
+  window.UiWorkout.render();
+  window.document.getElementById('f-modalita-workout').value = 'personalizzato';
+  window.document.getElementById('f-modalita-workout').dispatchEvent(new window.Event('change', { bubbles: true }));
+  window.document.getElementById('btn-aggiungi-giorno-perso').dispatchEvent(new window.Event('click', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
+  assert(window.Dati.stato().schedaPersonalizzata.giorni.length === 1, 'deve essere stato creato un giorno personalizzato');
+  window.document.querySelector('.btn-duplica-giorno-perso').dispatchEvent(new window.Event('click', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
+  assert(window.Dati.stato().schedaPersonalizzata.giorni.length === 2, 'duplicare un giorno personalizzato deve crearne una copia (trovati: ' + window.Dati.stato().schedaPersonalizzata.giorni.length + ')');
+
+  // ---- Tema scuro ----
+  window.App.mostraTab('impostazioni');
+  await window.UiImpostazioni.impostaTema('scuro');
+  assert(window.document.documentElement.getAttribute('data-tema') === 'scuro', 'attivare il tema scuro deve impostare data-tema="scuro" su <html>');
+  await window.UiImpostazioni.impostaTema('chiaro');
+
+  // ---- IA: impostazioni, parsing robusto del JSON, whitelist di sicurezza ----
+  await window.Dati.salvaImpostazioniIA({ abilitata: true, indirizzoServer: 'http://192.168.1.50:11434', modello: 'qwen3:8b' });
+  assert(window.Dati.stato().impostazioniIA.modello === 'qwen3:8b', 'le impostazioni IA devono salvarsi correttamente');
+
+  const jsonPulito = window.UiIA.estraiJSON('{"risposta":"ok","modifiche":[]}');
+  assert(jsonPulito && jsonPulito.risposta === 'ok', 'estraiJSON deve interpretare un JSON pulito');
+  const jsonConTestoIntorno = window.UiIA.estraiJSON('Ecco qua: {"risposta":"fatto","modifiche":[]} grazie mille');
+  assert(jsonConTestoIntorno && jsonConTestoIntorno.risposta === 'fatto', 'estraiJSON deve isolare il JSON anche se il modello aggiunge testo extra');
+  const jsonRotto = window.UiIA.estraiJSON('questo non e proprio json');
+  assert(jsonRotto === null, 'estraiJSON deve restituire null su testo non-JSON, senza lanciare eccezioni');
+
+  const routineEsistenteId = window.Dati.stato().routine[0].id;
+  assert(window.UiIA.validaModifica({ tipo: 'routine', id: routineEsistenteId, campo: 'descrizione', nuovoValore: 'x' }) === true, 'una modifica su un campo whitelisted e un id reale deve validare');
+  assert(window.UiIA.validaModifica({ tipo: 'routine', id: routineEsistenteId, campo: 'oraInizio', nuovoValore: '10:00' }) === false, 'una modifica su un campo NON whitelisted (es. oraInizio) deve essere rifiutata');
+  assert(window.UiIA.validaModifica({ tipo: 'routine', id: 'id-inventato-inesistente', campo: 'descrizione', nuovoValore: 'x' }) === false, 'una modifica che punta a un id inesistente deve essere rifiutata');
+  assert(window.UiIA.validaModifica({ tipo: 'task', id: routineEsistenteId, campo: 'ambito', nuovoValore: 'anno' }) === false, 'non deve mai essere possibile proporre modifiche a campi strutturali come "ambito"');
+
+  const risultatoTestIA = await window.ClienteIA.testConnessione();
+  assert(risultatoTestIA.ok === false && typeof risultatoTestIA.errore === 'string', 'senza un server IA reale raggiungibile, testConnessione deve fallire con grazia (non lanciare eccezioni)');
 
   window.close();
 

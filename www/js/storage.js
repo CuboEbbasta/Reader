@@ -16,28 +16,43 @@ const Dati = (function () {
   function statoDefault() {
     return {
       versione: 1,
-      routine: [],   // { id, nome, oraInizio:"HH:MM", durataMinuti, priorita:1-10, giorni:[1..7], attiva }
-      task: [],      // { id, nome, priorita:1-10, ambito:'giorno'|'settimana'|'mese'|'anno', scadenza:"YYYY-MM-DD",
+      routine: [],   // { id, nome, descrizione:"", tipo:'altro'|<idTipo>, oraInizio:"HH:MM", durataMinuti, priorita:1-10, giorni:[1..7], attiva }
+      task: [],      // { id, nome, priorita:1-10, tipo:'altro'|<idTipo>, ambito:'giorno'|'settimana'|'mese'|'anno', scadenza:"YYYY-MM-DD",
                      //   oraPromemoria:"HH:MM"|null, durataStimataMinuti:number|null, note:"", completata:bool }
+      tipiAttivita: [ // condiviso tra Routine e Task: i 4 "protetti" non si possono eliminare, quelli creati dall'utente sì
+        { id: 'allenamento', nome: 'Allenamento', protetto: true },
+        { id: 'pasto', nome: 'Pasto', protetto: true },
+        { id: 'sonno', nome: 'Sonno', protetto: true },
+        { id: 'diario', nome: 'Diario', protetto: true }
+      ],
       obiettivi: [], // { id, titolo, tipo:'concreto'|'generale'|'valoriale', ambito:'1mese'|'6mesi'|'1anno'|'5anni'|'10anni',
-                     //   scadenza:"YYYY-MM-DD", descrizione:"", completato:bool, taskCollegate:[taskId,...] }
+                     //   scadenza:"YYYY-MM-DD", descrizione:"", completato:bool, attivitaCollegate:["routine:ID"|"task:ID",...], tappe:[...] }
       journal: {},   // "YYYY-MM-DD" -> { fattoBene, daMigliorare, obiettivoDomani, voto:"7+", votoNumerico:7.25 }
       log: {},       // "YYYY-MM-DD" -> { tipo:'abituale'|'viaggio', completamenti:{ "routine:ID":bool, "task:ID":bool } }
       profilo: {     // dati fisici, alla base del calcolo calorico/macro della dieta
         eta: null, sesso: 'M', altezzaCm: null, pesoKg: null,
-        livelloAttivita: 'moderato', obiettivo: 'mantenimento',
+        livelloAttivita: 'moderato', obiettivo: 'mantenimento', numeroPasti: 5,
         allergie: [], patologie: '', cibiNonGraditi: '',
+        percentualeGrassa: null, // % massa grassa, facoltativo
+        circonferenze: { vita: null, fianchi: null, torace: null, braccio: null }, // cm, facoltativo
         storicoPeso: [] // [{data:"YYYY-MM-DD", peso:number}]
       },
       dietaPiano: { generatoIl: null, giorni: {} }, // giorni: {1:[pasti],...,7:[pasti]} (1=Lunedi...7=Domenica)
       dietaLog: {},  // "YYYY-MM-DD" -> { pasti: [{nome,kcal,proteine,carboidrati,grassi,fonte}] }
       profiloWorkout: { livello: 'intermedio', giorniDisponibili: 3 },
       schedaAdattiva: { generataIl: null, giorni: [] }, // vedi workout-plan.js
-      workoutLog: {}, // "YYYY-MM-DD" -> { schedaTipo:'veloce'|'completa'|'adattiva', etichetta:"", completato:bool, note:"" }
+      schedaPersonalizzata: { giorni: [] }, // [{id, etichetta, esercizi:[{nome,serie,ripetizioni,recupero}]}] — tutta scritta dall'utente
+      workoutLog: {}, // "YYYY-MM-DD" -> { schedaTipo:'veloce'|'completa'|'adattiva'|'personalizzato', etichetta:"", completato:bool, note:"" }
       orarioFisso: [],  // { id, materia, tipo:'universita'|'scuola'|'lavoro'|'altro', giorno:1-7, oraInizio, oraFine, aula, note }
       periodiAnno: [],  // { id, titolo, tipo:'esami'|'studio'|'lavoro'|'altro', dataInizio, dataFine, note }
+      impostazioniIA: {
+        abilitata: false,
+        indirizzoServer: 'http://localhost:11434', // su PC di norma localhost; dal telefono, l'IP del PC in rete locale
+        modello: 'qwen3:8b' // cambiabile liberamente dalle impostazioni
+      },
       impostazioni: {
-        oraPromemoriaDefaultTask: '09:00'
+        oraPromemoriaDefaultTask: '09:00',
+        tema: 'chiaro' // 'chiaro' | 'scuro'
       }
     };
   }
@@ -58,16 +73,31 @@ const Dati = (function () {
       const res = Preferences ? await Preferences.get({ key: CHIAVE }) : null;
       statoCorrente = (res && res.value) ? JSON.parse(res.value) : statoDefault();
       if (!statoCorrente.impostazioni) statoCorrente.impostazioni = statoDefault().impostazioni;
+      if (!statoCorrente.impostazioni.tema) statoCorrente.impostazioni.tema = 'chiaro';
       if (!statoCorrente.obiettivi) statoCorrente.obiettivi = [];
       if (!statoCorrente.journal) statoCorrente.journal = {};
       if (!statoCorrente.profilo) statoCorrente.profilo = statoDefault().profilo;
+      else {
+        if (statoCorrente.profilo.numeroPasti == null) statoCorrente.profilo.numeroPasti = 5;
+        if (statoCorrente.profilo.percentualeGrassa === undefined) statoCorrente.profilo.percentualeGrassa = null;
+        if (!statoCorrente.profilo.circonferenze) statoCorrente.profilo.circonferenze = { vita: null, fianchi: null, torace: null, braccio: null };
+      }
       if (!statoCorrente.dietaPiano) statoCorrente.dietaPiano = statoDefault().dietaPiano;
       if (!statoCorrente.dietaLog) statoCorrente.dietaLog = {};
       if (!statoCorrente.profiloWorkout) statoCorrente.profiloWorkout = statoDefault().profiloWorkout;
       if (!statoCorrente.schedaAdattiva) statoCorrente.schedaAdattiva = statoDefault().schedaAdattiva;
+      if (!statoCorrente.schedaPersonalizzata) statoCorrente.schedaPersonalizzata = statoDefault().schedaPersonalizzata;
       if (!statoCorrente.workoutLog) statoCorrente.workoutLog = {};
       if (!statoCorrente.orarioFisso) statoCorrente.orarioFisso = [];
       if (!statoCorrente.periodiAnno) statoCorrente.periodiAnno = [];
+      if (!statoCorrente.tipiAttivita) statoCorrente.tipiAttivita = statoDefault().tipiAttivita;
+      else {
+        // assicura che i 4 protetti esistano sempre, anche su stati salvati prima di questa versione
+        statoDefault().tipiAttivita.forEach(preset => {
+          if (!statoCorrente.tipiAttivita.find(t => t.id === preset.id)) statoCorrente.tipiAttivita.unshift(preset);
+        });
+      }
+      if (!statoCorrente.impostazioniIA) statoCorrente.impostazioniIA = statoDefault().impostazioniIA;
     } catch (e) {
       console.error('Errore caricamento stato, uso i valori di default', e);
       statoCorrente = statoDefault();
@@ -161,6 +191,11 @@ const Dati = (function () {
     await salva();
   }
 
+  async function salvaSchedaPersonalizzata(scheda) {
+    statoCorrente.schedaPersonalizzata = scheda;
+    await salva();
+  }
+
   async function registraWorkoutGiorno(dataISO, voce) {
     statoCorrente.workoutLog[dataISO] = voce;
     await salva();
@@ -174,6 +209,30 @@ const Dati = (function () {
 
   async function salvaPeriodiAnno(elenco) {
     statoCorrente.periodiAnno = elenco;
+    await salva();
+  }
+
+  // ---------------- Tipi di attività (condivisi Routine/Task) ----------------
+  async function aggiungiTipoAttivita(nome) {
+    const id = 'tipo_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    statoCorrente.tipiAttivita.push({ id, nome, protetto: false });
+    await salva();
+    return id;
+  }
+
+  async function eliminaTipoAttivita(id) {
+    const t = statoCorrente.tipiAttivita.find(x => x.id === id);
+    if (!t || t.protetto) return { ok: false, errore: 'Questo tipo non può essere eliminato.' };
+    statoCorrente.tipiAttivita = statoCorrente.tipiAttivita.filter(x => x.id !== id);
+    // le routine/task che usavano questo tipo tornano genericamente ad "altro"
+    statoCorrente.routine.forEach(r => { if (r.tipo === id) r.tipo = 'altro'; });
+    statoCorrente.task.forEach(t2 => { if (t2.tipo === id) t2.tipo = 'altro'; });
+    await salva();
+    return { ok: true };
+  }
+
+  async function salvaImpostazioniIA(dati) {
+    Object.assign(statoCorrente.impostazioniIA, dati);
     await salva();
   }
 
@@ -277,6 +336,7 @@ const Dati = (function () {
       });
       (nuovo.orarioFisso || []).forEach(o => { if (!s.orarioFisso.find(x => x.id === o.id)) s.orarioFisso.push(o); });
       (nuovo.periodiAnno || []).forEach(p => { if (!s.periodiAnno.find(x => x.id === p.id)) s.periodiAnno.push(p); });
+      (nuovo.tipiAttivita || []).forEach(t => { if (!s.tipiAttivita.find(x => x.id === t.id)) s.tipiAttivita.push(t); });
       Object.entries(nuovo.log || {}).forEach(([data, giorno]) => {
         if (!s.log[data]) {
           s.log[data] = giorno;
@@ -292,8 +352,9 @@ const Dati = (function () {
     statoDefault, generaId, carica, salva, stato,
     logGiorno, impostaCompletamento, impostaTipoGiorno, salvaVoceDiario,
     salvaProfilo, registraPeso, salvaPianoDieta, logDietaGiorno, aggiungiPastoLog, rimuoviPastoLog,
-    salvaProfiloWorkout, salvaSchedaAdattiva, registraWorkoutGiorno,
+    salvaProfiloWorkout, salvaSchedaAdattiva, salvaSchedaPersonalizzata, registraWorkoutGiorno,
     salvaOrarioFisso, salvaPeriodiAnno,
+    aggiungiTipoAttivita, eliminaTipoAttivita, salvaImpostazioniIA,
     esporta, importaDaTesto
   };
 })();

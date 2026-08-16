@@ -41,11 +41,12 @@ const GeneratorePiano = (function () {
   /** Genera un piano per tutti e 7 i giorni della settimana (chiavi 1=Lunedì..7=Domenica) */
   function generaPianoSettimanale(profilo) {
     const macro = CalcoloDieta.calcolaMacro(profilo);
+    const preset = DatabaseDieta.perNumeroPasti(profilo.numeroPasti || 5);
     const giorni = {};
     for (let giorno = 1; giorno <= 7; giorno++) {
-      giorni[giorno] = DatabaseDieta.CATEGORIE.map(cat => {
+      giorni[giorno] = preset.categorie.map(cat => {
         const categoriaBase = cat.startsWith('spuntino') ? 'spuntino' : cat;
-        const targetFascia = macro.targetKcal * DatabaseDieta.QUOTA_CATEGORIA[cat];
+        const targetFascia = macro.targetKcal * preset.quote[cat];
         const pasto = generaPastoCategoria(categoriaBase, targetFascia, profilo);
         return Object.assign({ categoria: cat }, pasto);
       });

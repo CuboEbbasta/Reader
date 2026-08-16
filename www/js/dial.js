@@ -53,7 +53,7 @@ const Quadrante = (function () {
     const percorsi = spicchi.map(s => {
       const a0 = (s.inizioMin / 1440) * 360;
       const a1 = (s.fineMin / 1440) * 360;
-      return `<path d="${pathSpicchio(cx, cy, r, a0, a1)}" fill="${s.colore}" stroke="#fff" stroke-width="1.5"><title>${s.nome}</title></path>`;
+      return `<path d="${pathSpicchio(cx, cy, r, a0, a1)}" fill="${s.colore}" stroke="var(--surface)" stroke-width="1.5"><title>${s.nome}</title></path>`;
     }).join('');
 
     let tacche = '';
@@ -63,8 +63,8 @@ const Quadrante = (function () {
         const p1 = polareACartesiane(cx, cy, r + 7, angolo);
         const p2 = polareACartesiane(cx, cy, r + 14, angolo);
         const lbl = polareACartesiane(cx, cy, r + 24, angolo);
-        tacche += `<line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="#9a9fb0" stroke-width="1.5"/>`;
-        tacche += `<text x="${lbl.x.toFixed(1)}" y="${lbl.y.toFixed(1)}" font-size="10" font-family="monospace" fill="#9a9fb0" text-anchor="middle" dominant-baseline="middle">${DataUtils.pad2(h)}</text>`;
+        tacche += `<line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="var(--ink-faint)" stroke-width="1.5"/>`;
+        tacche += `<text x="${lbl.x.toFixed(1)}" y="${lbl.y.toFixed(1)}" font-size="10" font-family="monospace" fill="var(--ink-faint)" text-anchor="middle" dominant-baseline="middle">${DataUtils.pad2(h)}</text>`;
       });
     }
 
@@ -72,12 +72,12 @@ const Quadrante = (function () {
     if (typeof minutiAdesso === 'number') {
       const angoloAdesso = (minutiAdesso / 1440) * 360;
       const punta = polareACartesiane(cx, cy, r - (compatto ? 3 : 6), angoloAdesso);
-      lancetta = `<line x1="${cx}" y1="${cy}" x2="${punta.x.toFixed(1)}" y2="${punta.y.toFixed(1)}" stroke="#23293a" stroke-width="${compatto ? 1.5 : 2.5}" stroke-linecap="round"/>
-                  <circle cx="${cx}" cy="${cy}" r="${compatto ? 2.5 : 4.5}" fill="#23293a" />`;
+      lancetta = `<line x1="${cx}" y1="${cy}" x2="${punta.x.toFixed(1)}" y2="${punta.y.toFixed(1)}" stroke="var(--ink)" stroke-width="${compatto ? 1.5 : 2.5}" stroke-linecap="round"/>
+                  <circle cx="${cx}" cy="${cy}" r="${compatto ? 2.5 : 4.5}" fill="var(--ink)" />`;
     }
 
     return `<svg class="quadrante-svg" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${cx}" cy="${cy}" r="${r + 1}" fill="#fff" />
+      <circle cx="${cx}" cy="${cy}" r="${r + 1}" fill="var(--surface)" />
       ${percorsi}
       ${tacche}
       ${lancetta}
@@ -94,10 +94,10 @@ const Quadrante = (function () {
       const a0 = (cursore / totale) * 360;
       cursore += f.valore;
       const a1 = (cursore / totale) * 360;
-      return `<path d="${pathSpicchio(cx, cy, r, a0, a1)}" fill="${f.colore}" stroke="#fff" stroke-width="1.5"><title>${f.nome}</title></path>`;
+      return `<path d="${pathSpicchio(cx, cy, r, a0, a1)}" fill="${f.colore}" stroke="var(--surface)" stroke-width="1.5"><title>${f.nome}</title></path>`;
     }).join('');
     return `<svg class="quadrante-svg" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${cx}" cy="${cy}" r="${r + 1}" fill="#fff" />
+      <circle cx="${cx}" cy="${cy}" r="${r + 1}" fill="var(--surface)" />
       ${percorsi}
     </svg>`;
   }
