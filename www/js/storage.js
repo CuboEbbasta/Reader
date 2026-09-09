@@ -42,7 +42,8 @@ const Dati = (function () {
       profiloWorkout: { livello: 'intermedio', giorniDisponibili: 3 },
       schedaAdattiva: { generataIl: null, giorni: [] }, // vedi workout-plan.js
       schedaPersonalizzata: { giorni: [] }, // [{id, etichetta, esercizi:[{nome,serie,ripetizioni,recupero}]}] — tutta scritta dall'utente
-      workoutLog: {}, // "YYYY-MM-DD" -> { schedaTipo:'veloce'|'completa'|'adattiva'|'personalizzato', etichetta:"", completato:bool, note:"" }
+      workoutLog: {}, // "YYYY-MM-DD" -> [{schedaTipo, etichetta, completato:true, ora}] — più voci per giorno
+      sonnoLog: {},   // "YYYY-MM-DD" -> { oraInizio, oraFine, oreDormite, qualita:1-5|null }
       orarioFisso: [],  // { id, materia, tipo:'universita'|'scuola'|'lavoro'|'altro', giorno:1-7, oraInizio, oraFine, aula, note }
       periodiAnno: [],  // { id, titolo, tipo:'esami'|'studio'|'lavoro'|'altro', dataInizio, dataFine, note }
       impostazioniIA: {
@@ -52,7 +53,8 @@ const Dati = (function () {
       },
       impostazioni: {
         oraPromemoriaDefaultTask: '09:00',
-        tema: 'chiaro' // 'chiaro' | 'scuro'
+        tema: 'chiaro', // 'chiaro' | 'scuro'
+        onboardingCompletato: false
       }
     };
   }
@@ -74,6 +76,9 @@ const Dati = (function () {
       statoCorrente = (res && res.value) ? JSON.parse(res.value) : statoDefault();
       if (!statoCorrente.impostazioni) statoCorrente.impostazioni = statoDefault().impostazioni;
       if (!statoCorrente.impostazioni.tema) statoCorrente.impostazioni.tema = 'chiaro';
+      if (statoCorrente.impostazioni.onboardingCompletato === undefined) {
+        statoCorrente.impostazioni.onboardingCompletato = true;
+      }
       if (!statoCorrente.obiettivi) statoCorrente.obiettivi = [];
       if (!statoCorrente.journal) statoCorrente.journal = {};
       if (!statoCorrente.profilo) statoCorrente.profilo = statoDefault().profilo;
@@ -88,6 +93,12 @@ const Dati = (function () {
       if (!statoCorrente.schedaAdattiva) statoCorrente.schedaAdattiva = statoDefault().schedaAdattiva;
       if (!statoCorrente.schedaPersonalizzata) statoCorrente.schedaPersonalizzata = statoDefault().schedaPersonalizzata;
       if (!statoCorrente.workoutLog) statoCorrente.workoutLog = {};
+      else {
+        Object.keys(statoCorrente.workoutLog).forEach(data => {
+          if (!Array.isArray(statoCorrente.workoutLog[data])) statoCorrente.workoutLog[data] = [statoCorrente.workoutLog[data]];
+        });
+      }
+      if (!statoCorrente.sonnoLog) statoCorrente.sonnoLog = {};
       if (!statoCorrente.orarioFisso) statoCorrente.orarioFisso = [];
       if (!statoCorrente.periodiAnno) statoCorrente.periodiAnno = [];
       if (!statoCorrente.tipiAttivita) statoCorrente.tipiAttivita = statoDefault().tipiAttivita;
@@ -197,7 +208,20 @@ const Dati = (function () {
   }
 
   async function registraWorkoutGiorno(dataISO, voce) {
-    statoCorrente.workoutLog[dataISO] = voce;
+    if (!statoCorrente.workoutLog[dataISO]) statoCorrente.workoutLog[dataISO] = [];
+    statoCorrente.workoutLog[dataISO].push(Object.assign({ ora: DataUtils.formatOraMinutiInGiorno(DataUtils.minutiAdesso()) }, voce));
+    await salva();
+  }
+
+  async function rimuoviWorkoutGiorno(dataISO, indice) {
+    if (statoCorrente.workoutLog[dataISO]) {
+      statoCorrente.workoutLog[dataISO].splice(indice, 1);
+      await salva();
+    }
+  }
+
+  async function registraSonno(dataISO, voce) {
+    statoCorrente.sonnoLog[dataISO] = voce;
     await salva();
   }
 
@@ -334,6 +358,9 @@ const Dati = (function () {
       Object.entries(nuovo.workoutLog || {}).forEach(([data, voce]) => {
         if (!s.workoutLog[data]) s.workoutLog[data] = voce;
       });
+      Object.entries(nuovo.sonnoLog || {}).forEach(([data, voce]) => {
+        if (!s.sonnoLog[data]) s.sonnoLog[data] = voce;
+      });
       (nuovo.orarioFisso || []).forEach(o => { if (!s.orarioFisso.find(x => x.id === o.id)) s.orarioFisso.push(o); });
       (nuovo.periodiAnno || []).forEach(p => { if (!s.periodiAnno.find(x => x.id === p.id)) s.periodiAnno.push(p); });
       (nuovo.tipiAttivita || []).forEach(t => { if (!s.tipiAttivita.find(x => x.id === t.id)) s.tipiAttivita.push(t); });
@@ -352,7 +379,8 @@ const Dati = (function () {
     statoDefault, generaId, carica, salva, stato,
     logGiorno, impostaCompletamento, impostaTipoGiorno, salvaVoceDiario,
     salvaProfilo, registraPeso, salvaPianoDieta, logDietaGiorno, aggiungiPastoLog, rimuoviPastoLog,
-    salvaProfiloWorkout, salvaSchedaAdattiva, salvaSchedaPersonalizzata, registraWorkoutGiorno,
+    salvaProfiloWorkout, salvaSchedaAdattiva, salvaSchedaPersonalizzata, registraWorkoutGiorno, rimuoviWorkoutGiorno,
+    registraSonno,
     salvaOrarioFisso, salvaPeriodiAnno,
     aggiungiTipoAttivita, eliminaTipoAttivita, salvaImpostazioniIA,
     esporta, importaDaTesto
