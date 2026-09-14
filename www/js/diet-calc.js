@@ -50,9 +50,26 @@ const CalcoloDieta = (function () {
     return { targetKcal, proteineG, grassiG, carboidratiG };
   }
 
+  const LIVELLI_VOTO = [
+    { soglia: 0.90, etichetta: 'Ottimo', classe: 'badge-ok' },
+    { soglia: 0.75, etichetta: 'Buono', classe: 'badge-accent' },
+    { soglia: 0.50, etichetta: 'Così così', classe: 'badge-warn' },
+    { soglia: 0, etichetta: 'Da migliorare', classe: 'badge-warn' }
+  ];
+
+  /** Confronta cosa hai mangiato col target e restituisce un giudizio qualitativo (null se non hai mangiato nulla) */
+  function valutaGiornata(mangiato, target) {
+    if (!mangiato || !mangiato.kcal) return null;
+    const scostamentoKcal = Math.abs(mangiato.kcal - target.targetKcal) / target.targetKcal;
+    const scostamentoProteine = Math.abs(mangiato.proteine - target.proteineG) / Math.max(1, target.proteineG);
+    const punteggio = Math.max(0, 1 - (scostamentoKcal * 0.6 + scostamentoProteine * 0.4));
+    const livello = LIVELLI_VOTO.find(l => punteggio >= l.soglia);
+    return { punteggio: Math.round(punteggio * 100), etichetta: livello.etichetta, classe: livello.classe };
+  }
+
   return {
     MOLTIPLICATORE_ATTIVITA, ETICHETTE_ATTIVITA, FATTORE_OBIETTIVO, ETICHETTE_OBIETTIVO,
-    profiloCompleto, calcolaBMR, calcolaTDEE, calcolaTargetCalorico, calcolaMacro
+    profiloCompleto, calcolaBMR, calcolaTDEE, calcolaTargetCalorico, calcolaMacro, valutaGiornata
   };
 })();
 

@@ -8,7 +8,7 @@ const App = (function () {
   // Le 5 tab principali; alcune raggruppano più viste con una sotto-nav a pillole.
   const GRUPPI = {
     fare: { figli: ['routine', 'task', 'orario'], etichette: { routine: 'Routine', task: 'Task', orario: 'Orario fisso' } },
-    salute: { figli: ['dieta', 'workout'], etichette: { dieta: 'Dieta', workout: 'Workout' } },
+    salute: { figli: ['dieta', 'workout', 'sonno'], etichette: { dieta: 'Dieta', workout: 'Workout', sonno: 'Sonno' } },
     crescita: { figli: ['obiettivi', 'diario'], etichette: { obiettivi: 'Obiettivi', diario: 'Diario' } },
     altro: { figli: ['panoramica', 'ia', 'impostazioni'], etichette: { panoramica: 'Panoramica', ia: 'Assistente IA', impostazioni: 'Impostazioni' } }
   };
@@ -36,6 +36,7 @@ const App = (function () {
     if (nome === 'oggi') UiOggi.renderTutto();
     else if (nome === 'dieta') UiDieta.render();
     else if (nome === 'workout') UiWorkout.render();
+    else if (nome === 'sonno') UiSonno.render();
     else if (nome === 'routine') UiRoutine.renderLista();
     else if (nome === 'task') UiTask.renderLista();
     else if (nome === 'orario') UiOrario.render();
@@ -85,6 +86,7 @@ const App = (function () {
     UiOggi.renderTutto();
     UiDieta.render();
     UiWorkout.render();
+    UiSonno.render();
     UiPanoramica.render();
     UiImpostazioni.render();
   }

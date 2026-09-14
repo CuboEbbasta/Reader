@@ -187,12 +187,14 @@ const UiWorkout = (function () {
     document.getElementById('btn-salva-eserc-perso').addEventListener('click', async () => {
       const nome = document.getElementById('f-nome-eserc').value.trim();
       if (!nome) { window.App.mostraToast('Dai un nome all\'esercizio.'); return; }
+      const serie = parseInt(document.getElementById('f-serie-eserc').value, 10);
+      if (!serie || serie < 1) { window.App.mostraToast('Le serie devono essere almeno 1.'); return; }
+      const ripetizioni = document.getElementById('f-rip-eserc').value.trim();
+      if (!ripetizioni) { window.App.mostraToast('Indica le ripetizioni (es. "10-12" o "30 sec").'); return; }
       const scheda = Dati.stato().schedaPersonalizzata;
       scheda.giorni[indiceGiorno].esercizi.push({
-        nome,
-        serie: parseInt(document.getElementById('f-serie-eserc').value, 10) || 1,
-        ripetizioni: document.getElementById('f-rip-eserc').value.trim() || '-',
-        recupero: parseInt(document.getElementById('f-recupero-eserc').value, 10) || 0
+        nome, serie, ripetizioni,
+        recupero: Math.max(0, parseInt(document.getElementById('f-recupero-eserc').value, 10) || 0)
       });
       await Dati.salvaSchedaPersonalizzata(scheda);
       window.App.chiudiFoglio();
@@ -204,18 +206,22 @@ const UiWorkout = (function () {
   function renderLog() {
     const oggi = DataUtils.oggiISO();
     const log = Dati.stato().workoutLog;
-    const voceOggi = log[oggi];
-    const storico = Object.entries(log).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 7);
+    const vociOggi = log[oggi] || [];
+    const storico = Object.entries(log).filter(([d]) => d !== oggi).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 7);
     return `
       <div class="card">
         <h3>Oggi</h3>
-        ${voceOggi
-          ? `<div class="legenda-riga"><span class="badge badge-ok">Fatto</span><span class="legenda-nome">${UiRoutine.escapeHtml(voceOggi.etichetta)}</span></div>
-             <button class="btn btn-sm btn-ghost" id="btn-annulla-workout-oggi">Annulla</button>`
-          : '<div class="vuoto">Non hai ancora segnato un allenamento per oggi.</div>'}
+        ${vociOggi.length ? vociOggi.map((v, i) => `
+          <div class="legenda-riga">
+            <span class="badge badge-ok">Fatto ${v.ora ? 'alle ' + v.ora : ''}</span>
+            <span class="legenda-nome">${UiRoutine.escapeHtml(v.etichetta)}</span>
+            <button class="icon-btn btn-rimuovi-workout-oggi" data-indice="${i}" title="Rimuovi">${Icone.svg('delete', 15)}</button>
+          </div>
+        `).join('') : '<div class="vuoto">Non hai ancora segnato un allenamento per oggi.</div>'}
+        ${vociOggi.length ? '<div class="elemento-meta" style="margin-top:6px;">Puoi segnare più allenamenti nello stesso giorno: tocca di nuovo "Ho fatto questa oggi" su una scheda qui sopra.</div>' : ''}
         ${storico.length ? `
-        <div class="divisore-testo">Ultimi 7 giorni</div>
-        ${storico.map(([data, v]) => `<div class="legenda-riga"><span class="legenda-nome">${DataUtils.formatDataBreve(data)}</span><span class="legenda-tempo">${UiRoutine.escapeHtml(v.etichetta)}</span></div>`).join('')}
+        <div class="divisore-testo">Ultimi giorni</div>
+        ${storico.map(([data, voci]) => `<div class="legenda-riga"><span class="legenda-nome">${DataUtils.formatDataBreve(data)}</span><span class="legenda-tempo">${voci.map(v => UiRoutine.escapeHtml(v.etichetta)).join(', ')}</span></div>`).join('')}
         ` : ''}
       </div>
     `;
@@ -224,6 +230,21 @@ const UiWorkout = (function () {
   // ---------------- Render principale ----------------
   function render() {
     const cont = document.getElementById('workout-corpo');
+
+    if (!CalcoloDieta.profiloCompleto(Dati.stato().profilo)) {
+      cont.innerHTML = `
+        <div class="card">
+          <h3>Prima completa il profilo in Dieta</h3>
+          <div class="elemento-meta" style="margin-bottom:12px;">
+            Lo sforzo giusto è diverso se vuoi mantenere, aumentare o perdere massa: senza
+            queste informazioni non posso calibrare bene le schede. Bastano due minuti.
+          </div>
+          <button class="btn btn-accent btn-block" id="btn-vai-a-dieta">Vai al profilo Dieta</button>
+        </div>`;
+      document.getElementById('btn-vai-a-dieta').addEventListener('click', () => window.App.mostraTab('dieta'));
+      return;
+    }
+
     cont.innerHTML = renderSelettoreModalita() + renderImpostazioni() +
       (modalita === 'pronte'
         ? renderSchedaFissa('Scheda veloce (senza attrezzi)', DatabaseWorkout.SCHEDA_VELOCE_IDS, 'veloce', 'Circa 15-20 minuti, corpo libero, nessun attrezzo.') +
@@ -296,13 +317,10 @@ const UiWorkout = (function () {
       render();
     }));
 
-    const btnAnnulla = document.getElementById('btn-annulla-workout-oggi');
-    if (btnAnnulla) btnAnnulla.addEventListener('click', async () => {
-      const s = Dati.stato();
-      delete s.workoutLog[DataUtils.oggiISO()];
-      await Dati.salva();
+    cont.querySelectorAll('.btn-rimuovi-workout-oggi').forEach(b => b.addEventListener('click', async () => {
+      await Dati.rimuoviWorkoutGiorno(DataUtils.oggiISO(), parseInt(b.dataset.indice, 10));
       render();
-    });
+    }));
   }
 
   async function generaAdattiva(conConferma) {

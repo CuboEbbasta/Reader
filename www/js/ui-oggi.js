@@ -252,14 +252,15 @@ const UiOggi = (function () {
     const btnPasto = document.getElementById('btn-popup-salva-pasto');
     if (btnPasto) btnPasto.addEventListener('click', async () => {
       const nome = document.getElementById('popup-pasto-nome').value.trim() || r.nome;
-      await Dati.aggiungiPastoLog(dataISO, {
-        nome,
-        kcal: parseInt(document.getElementById('popup-pasto-kcal').value, 10) || 0,
-        proteine: parseInt(document.getElementById('popup-pasto-prot').value, 10) || 0,
-        carboidrati: parseInt(document.getElementById('popup-pasto-carb').value, 10) || 0,
-        grassi: parseInt(document.getElementById('popup-pasto-grassi').value, 10) || 0,
-        fonte: 'routine'
-      });
+      const kcal = parseInt(document.getElementById('popup-pasto-kcal').value, 10) || 0;
+      const proteine = parseInt(document.getElementById('popup-pasto-prot').value, 10) || 0;
+      const carboidrati = parseInt(document.getElementById('popup-pasto-carb').value, 10) || 0;
+      const grassi = parseInt(document.getElementById('popup-pasto-grassi').value, 10) || 0;
+      if (kcal === 0 && proteine === 0 && carboidrati === 0 && grassi === 0) {
+        window.App.mostraToast('Inserisci almeno un valore diverso da zero.');
+        return;
+      }
+      await Dati.aggiungiPastoLog(dataISO, { nome, kcal, proteine, carboidrati, grassi, fonte: 'routine' });
       await Dati.impostaCompletamento(chiave, dataISO, true);
       window.App.chiudiFoglio(); window.App.mostraToast('Pasto registrato.'); renderTutto();
     });

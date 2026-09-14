@@ -7,6 +7,16 @@
 const UiDieta = (function () {
   let giornoSelezionatoPiano = DataUtils.weekdayISO(DataUtils.oggiISO());
 
+  /** Integrità dati: un pasto non può essere tutto a zero, né avere valori assurdi */
+  function validaValoriPasto(kcal, proteine, carboidrati, grassi) {
+    if (kcal === 0 && proteine === 0 && carboidrati === 0 && grassi === 0) {
+      return 'Inserisci almeno un valore diverso da zero — un pasto non può essere tutto a 0.';
+    }
+    if (kcal < 0 || proteine < 0 || carboidrati < 0 || grassi < 0) return 'I valori non possono essere negativi.';
+    if (kcal > 5000) return 'Kcal troppo alte per un singolo pasto (' + kcal + '): controlla il valore.';
+    return null;
+  }
+
   // ---------------- Profilo ----------------
   function apriFormProfilo() {
     const p = Dati.stato().profilo;
@@ -278,14 +288,13 @@ const UiDieta = (function () {
   async function salvaPasto(indiceEsistente) {
     const nome = document.getElementById('f-nome-pasto').value.trim();
     if (!nome) { window.App.mostraToast('Dai un nome al pasto.'); return; }
-    const nuovoPasto = {
-      nome,
-      categoria: document.getElementById('f-categoria-pasto').value,
-      kcal: parseInt(document.getElementById('f-kcal-pasto').value, 10) || 0,
-      proteine: parseInt(document.getElementById('f-prot-pasto').value, 10) || 0,
-      carboidrati: parseInt(document.getElementById('f-carb-pasto').value, 10) || 0,
-      grassi: parseInt(document.getElementById('f-grassi-pasto').value, 10) || 0
-    };
+    const kcal = parseInt(document.getElementById('f-kcal-pasto').value, 10) || 0;
+    const proteine = parseInt(document.getElementById('f-prot-pasto').value, 10) || 0;
+    const carboidrati = parseInt(document.getElementById('f-carb-pasto').value, 10) || 0;
+    const grassi = parseInt(document.getElementById('f-grassi-pasto').value, 10) || 0;
+    const erroreValidazione = validaValoriPasto(kcal, proteine, carboidrati, grassi);
+    if (erroreValidazione) { window.App.mostraToast(erroreValidazione); return; }
+    const nuovoPasto = { nome, categoria: document.getElementById('f-categoria-pasto').value, kcal, proteine, carboidrati, grassi };
     const piano = Dati.stato().dietaPiano;
     if (!piano.giorni[giornoSelezionatoPiano]) piano.giorni[giornoSelezionatoPiano] = [];
     if (indiceEsistente != null) piano.giorni[giornoSelezionatoPiano][indiceEsistente] = nuovoPasto;
@@ -326,10 +335,14 @@ const UiDieta = (function () {
     const weekdayOggi = DataUtils.weekdayISO(oggi);
     const pastiPianificatiOggi = (piano && piano.giorni[weekdayOggi]) || [];
 
+    const valutazione = CalcoloDieta.valutaGiornata(mangiato, macro);
     return `
       <div class="card">
-        <h3>Oggi hai mangiato</h3>
-        <div class="griglia-3" style="margin-bottom:10px;">
+        <div class="riga-btn" style="justify-content:space-between;align-items:center;">
+          <h3 style="margin:0;">Oggi hai mangiato</h3>
+          ${valutazione ? `<span class="badge ${valutazione.classe}">${valutazione.etichetta}</span>` : ''}
+        </div>
+        <div class="griglia-3" style="margin:10px 0;">
           <div class="stat-box"><div class="stat-num">${mangiato.kcal}/${macro.targetKcal}</div><div class="stat-lbl">kcal</div></div>
           <div class="stat-box"><div class="stat-num">${mangiato.proteine}/${macro.proteineG}g</div><div class="stat-lbl">Proteine</div></div>
           <div class="stat-box"><div class="stat-num">${mangiato.carboidrati}/${macro.carboidratiG}g</div><div class="stat-lbl">Carboidrati</div></div>
@@ -384,14 +397,13 @@ const UiDieta = (function () {
     document.getElementById('btn-salva-libero').addEventListener('click', async () => {
       const nome = document.getElementById('f-nome-libero').value.trim();
       if (!nome) { window.App.mostraToast('Dai un nome al pasto.'); return; }
-      await Dati.aggiungiPastoLog(DataUtils.oggiISO(), {
-        nome,
-        kcal: parseInt(document.getElementById('f-kcal-libero').value, 10) || 0,
-        proteine: parseInt(document.getElementById('f-prot-libero').value, 10) || 0,
-        carboidrati: parseInt(document.getElementById('f-carb-libero').value, 10) || 0,
-        grassi: parseInt(document.getElementById('f-grassi-libero').value, 10) || 0,
-        fonte: 'libero'
-      });
+      const kcal = parseInt(document.getElementById('f-kcal-libero').value, 10) || 0;
+      const proteine = parseInt(document.getElementById('f-prot-libero').value, 10) || 0;
+      const carboidrati = parseInt(document.getElementById('f-carb-libero').value, 10) || 0;
+      const grassi = parseInt(document.getElementById('f-grassi-libero').value, 10) || 0;
+      const erroreValidazione = validaValoriPasto(kcal, proteine, carboidrati, grassi);
+      if (erroreValidazione) { window.App.mostraToast(erroreValidazione); return; }
+      await Dati.aggiungiPastoLog(DataUtils.oggiISO(), { nome, kcal, proteine, carboidrati, grassi, fonte: 'libero' });
       window.App.chiudiFoglio();
       window.App.mostraToast('Aggiunto al log di oggi.');
       render();
