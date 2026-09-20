@@ -21,11 +21,30 @@ const UiJournal = (function () {
 
   function renderStatisticheGiorno(dataISO) {
     const { completate, totali, percCompletate, percPesata } = UiOggi.calcolaStatistiche(dataISO);
+    const workoutGiorno = Dati.stato().workoutLog[dataISO] || [];
+    const sonnoGiorno = Dati.stato().sonnoLog[dataISO];
+    const logDieta = Dati.stato().dietaLog[dataISO];
+    let valutazioneDieta = null;
+    if (logDieta && logDieta.pasti.length && CalcoloDieta.profiloCompleto(Dati.stato().profilo)) {
+      const mangiato = logDieta.pasti.reduce((tot, x) => ({
+        kcal: tot.kcal + x.kcal, proteine: tot.proteine + x.proteine,
+        carboidrati: tot.carboidrati + x.carboidrati, grassi: tot.grassi + x.grassi
+      }), { kcal: 0, proteine: 0, carboidrati: 0, grassi: 0 });
+      valutazioneDieta = CalcoloDieta.valutaGiornata(mangiato, CalcoloDieta.calcolaMacro(Dati.stato().profilo));
+    }
+
     document.getElementById('diario-statistiche').innerHTML = `
       <div class="griglia-3">
         <div class="stat-box"><div class="stat-num">${completate}/${totali}</div><div class="stat-lbl">Completate</div></div>
         <div class="stat-box"><div class="stat-num">${percCompletate}%</div><div class="stat-lbl">Aderenza</div></div>
         <div class="stat-box"><div class="stat-num">${percPesata}%</div><div class="stat-lbl">Pesata priorità</div></div>
+      </div>
+      <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">
+        ${workoutGiorno.length
+          ? `<span class="badge badge-ok">${Icone.svg('salute', 12)} ${workoutGiorno.map(w => UiRoutine.escapeHtml(w.etichetta)).join(', ')}</span>`
+          : '<span class="badge badge-warn">Nessun allenamento</span>'}
+        ${sonnoGiorno ? `<span class="badge badge-accent">${sonnoGiorno.oreDormite}h di sonno</span>` : ''}
+        ${valutazioneDieta ? `<span class="badge ${valutazioneDieta.classe}">Dieta: ${valutazioneDieta.etichetta}</span>` : ''}
       </div>`;
   }
 

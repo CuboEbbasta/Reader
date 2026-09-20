@@ -111,9 +111,7 @@ const App = (function () {
     }
   }
 
-  async function init() {
-    await Dati.carica();
-    document.documentElement.setAttribute('data-tema', Dati.stato().impostazioni.tema || 'chiaro');
+  async function completaAvvio() {
     await Notifiche.inizializza(onAzioneNotifica);
 
     document.querySelectorAll('.tab-btn').forEach(b => {
@@ -134,6 +132,17 @@ const App = (function () {
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) UiOggi.renderTutto();
     });
+  }
+
+  async function init() {
+    await Dati.carica();
+    document.documentElement.setAttribute('data-tema', Dati.stato().impostazioni.tema || 'chiaro');
+
+    if (!Dati.stato().impostazioni.onboardingCompletato) {
+      UiOnboarding.avvia(completaAvvio);
+    } else {
+      await completaAvvio();
+    }
   }
 
   return { init, apriFoglio, chiudiFoglio, mostraToast, mostraTab, aggiornaOggi, aggiornaTutto };
