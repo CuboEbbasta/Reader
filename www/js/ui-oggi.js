@@ -74,7 +74,8 @@ const UiOggi = (function () {
       nome: v.nome, tipo: v.tipo, chiave: v.chiave
     }));
     const spicchi = Quadrante.calcolaSpicchi(blocchi);
-    cont.innerHTML = Quadrante.renderSVG(spicchi, DataUtils.minutiAdesso(), 104);
+    const larghezza = Math.min(340, cont.clientWidth || 300);
+    cont.innerHTML = Quadrante.renderSVG(spicchi, DataUtils.minutiAdesso(), larghezza);
   }
 
   function statoCompletamento(chiave, dataISO) {
@@ -152,8 +153,9 @@ const UiOggi = (function () {
   function renderStatistiche(voci) {
     const { completate, totali, percCompletate } = calcolaStatistiche(DataUtils.oggiISO());
     document.getElementById('statistiche-oggi').innerHTML = `
-      <div class="oggi-stat-riga"><span class="oggi-stat-num">${completate}/${totali}</span><span class="oggi-stat-lbl">completate</span></div>
-      <div class="oggi-stat-riga"><span class="oggi-stat-num">${percCompletate}%</span><span class="oggi-stat-lbl">aderenza oggi</span></div>
+      <div class="oggi-stat-blocco"><span class="oggi-stat-num">${completate}/${totali}</span><span class="oggi-stat-lbl">completate</span></div>
+      <div class="oggi-stat-separatore"></div>
+      <div class="oggi-stat-blocco"><span class="oggi-stat-num">${percCompletate}%</span><span class="oggi-stat-lbl">aderenza oggi</span></div>
     `;
   }
 
