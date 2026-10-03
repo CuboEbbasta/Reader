@@ -22,14 +22,14 @@ const UiRoutine = (function () {
       const badgeTipo = (r.tipo && r.tipo !== 'altro') ? `<span class="badge" style="background:${UiTipi.coloreTipo(r.tipo)}22;color:${UiTipi.coloreTipo(r.tipo)};">${UiTipi.nomeTipo(r.tipo)}</span>` : '';
       return `
       <div class="elemento-riga" data-id="${r.id}">
-        <div class="priorita-pill" style="background:${coloreDaPriorita(r.priorita)}">${r.priorita}</div>
+        <div class="priorita-pill" style="background:${coloreDaPriorita(r.priorita)}"></div>
         <div class="elemento-corpo">
           <div class="elemento-titolo">${escapeHtml(r.nome)} ${badgeTipo}</div>
-          <div class="elemento-meta">${r.oraInizio} · ${r.durataMinuti} min · ${giorniTxt}</div>
+          <div class="elemento-meta">${r.oraInizio} · ${r.durataMinuti} min · P${r.priorita} · ${giorniTxt}</div>
         </div>
         <div class="elemento-azioni">
-          <button class="icon-btn btn-modifica-routine" data-id="${r.id}" title="Modifica">✏️</button>
-          <button class="icon-btn btn-elimina-routine" data-id="${r.id}" title="Elimina">🗑️</button>
+          <button class="icon-btn btn-modifica-routine" data-id="${r.id}" title="Modifica">${Icone.svg('edit', 16)}</button>
+          <button class="icon-btn btn-elimina-routine" data-id="${r.id}" title="Elimina">${Icone.svg('delete', 16)}</button>
         </div>
       </div>`;
     }).join('');
@@ -56,7 +56,7 @@ const UiRoutine = (function () {
     const html = `
       <div class="foglio-header">
         <h2>${esistente ? 'Modifica routine' : 'Nuova routine'}</h2>
-        <button class="icon-btn" id="btn-chiudi-foglio">✕</button>
+        <button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button>
       </div>
       <div class="campo">
         <label>Nome attività</label>

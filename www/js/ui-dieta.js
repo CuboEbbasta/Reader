@@ -23,7 +23,7 @@ const UiDieta = (function () {
     const html = `
       <div class="foglio-header">
         <h2>Il tuo profilo</h2>
-        <button class="icon-btn" id="btn-chiudi-foglio">✕</button>
+        <button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button>
       </div>
       <div class="elemento-meta" style="margin-bottom:12px;">
         Serve per calcolare un fabbisogno calorico indicativo. Non sostituisce
@@ -234,14 +234,14 @@ const UiDieta = (function () {
     if (!pastiGiorno.length) return '<div class="vuoto">Nessun pasto per questo giorno.</div>';
     return pastiGiorno.map((p, indice) => `
       <div class="elemento-riga" data-indice="${indice}">
-        <div class="priorita-pill" style="background:var(--accent);font-size:9px;">${DatabaseDieta.ETICHETTE_CATEGORIA[p.categoria] || '—'}</div>
+        <div class="priorita-pill" style="background:var(--accent)"></div>
         <div class="elemento-corpo">
-          <div class="elemento-titolo">${UiRoutine.escapeHtml(p.nome)}</div>
+          <div class="elemento-titolo">${UiRoutine.escapeHtml(p.nome)} <span class="badge badge-accent">${DatabaseDieta.ETICHETTE_CATEGORIA[p.categoria] || '—'}</span></div>
           <div class="elemento-meta">${p.kcal} kcal · P ${p.proteine}g · C ${p.carboidrati}g · G ${p.grassi}g</div>
         </div>
         <div class="elemento-azioni">
-          <button class="icon-btn btn-modifica-pasto" data-indice="${indice}" title="Modifica">✏️</button>
-          <button class="icon-btn btn-elimina-pasto" data-indice="${indice}" title="Elimina">🗑️</button>
+          <button class="icon-btn btn-modifica-pasto" data-indice="${indice}" title="Modifica">${Icone.svg('edit', 16)}</button>
+          <button class="icon-btn btn-elimina-pasto" data-indice="${indice}" title="Elimina">${Icone.svg('delete', 16)}</button>
         </div>
       </div>
     `).join('');
@@ -256,7 +256,7 @@ const UiDieta = (function () {
     const html = `
       <div class="foglio-header">
         <h2>${esistente ? 'Modifica pasto' : 'Nuovo pasto'}</h2>
-        <button class="icon-btn" id="btn-chiudi-foglio">✕</button>
+        <button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button>
       </div>
       <div class="campo">
         <label>Nome</label>
@@ -365,11 +365,11 @@ const UiDieta = (function () {
     return pasti.map((p, indice) => `
       <div class="elemento-riga" data-indice="${indice}">
         <div class="elemento-corpo">
-          <div class="elemento-titolo">${UiRoutine.escapeHtml(p.nome)}</div>
+          <div class="elemento-titolo">${UiRoutine.escapeHtml(p.nome)} <span class="badge badge-accent">${DatabaseDieta.ETICHETTE_CATEGORIA[p.categoria] || '—'}</span></div>
           <div class="elemento-meta">${p.kcal} kcal · P ${p.proteine}g · C ${p.carboidrati}g · G ${p.grassi}g</div>
         </div>
         <div class="elemento-azioni">
-          <button class="icon-btn btn-elimina-log" data-indice="${indice}" title="Rimuovi">🗑️</button>
+          <button class="icon-btn btn-elimina-log" data-indice="${indice}" title="Rimuovi">${Icone.svg('delete', 16)}</button>
         </div>
       </div>
     `).join('');
@@ -379,7 +379,7 @@ const UiDieta = (function () {
     const html = `
       <div class="foglio-header">
         <h2>Pasto libero</h2>
-        <button class="icon-btn" id="btn-chiudi-foglio">✕</button>
+        <button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button>
       </div>
       <div class="campo"><label>Nome</label><input type="text" id="f-nome-libero" placeholder="Cosa hai mangiato"></div>
       <div class="griglia-2">

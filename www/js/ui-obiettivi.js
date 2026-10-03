@@ -90,10 +90,10 @@ const UiObiettivi = (function () {
           ${o.descrizione ? `<div class="elemento-meta" style="margin-top:3px;font-style:italic;">${UiRoutine.escapeHtml(o.descrizione.slice(0, 90))}${o.descrizione.length > 90 ? '…' : ''}</div>` : ''}
         </div>
         <div class="elemento-azioni">
-          <button class="icon-btn btn-tappe-obiettivo" data-id="${o.id}" title="Tappe/timeline">📍</button>
-          <button class="icon-btn btn-toggle-obiettivo" data-id="${o.id}" title="${o.completato ? 'Riapri' : 'Segna raggiunto'}">${o.completato ? '↺' : '✅'}</button>
-          <button class="icon-btn btn-modifica-obiettivo" data-id="${o.id}" title="Modifica">✏️</button>
-          <button class="icon-btn btn-elimina-obiettivo" data-id="${o.id}" title="Elimina">🗑️</button>
+          <button class="icon-btn btn-tappe-obiettivo" data-id="${o.id}" title="Tappe/timeline">${Icone.svg('tappa', 16)}</button>
+          <button class="icon-btn btn-toggle-obiettivo" data-id="${o.id}" title="${o.completato ? 'Riapri' : 'Segna raggiunto'}">${Icone.svg(o.completato ? 'indietro' : 'check', 16)}</button>
+          <button class="icon-btn btn-modifica-obiettivo" data-id="${o.id}" title="Modifica">${Icone.svg('edit', 16)}</button>
+          <button class="icon-btn btn-elimina-obiettivo" data-id="${o.id}" title="Elimina">${Icone.svg('delete', 16)}</button>
         </div>
       </div>
     `; }).join('');
@@ -130,7 +130,7 @@ const UiObiettivi = (function () {
     const html = `
       <div class="foglio-header">
         <h2>${esistente ? 'Modifica obiettivo' : 'Nuovo obiettivo'}</h2>
-        <button class="icon-btn" id="btn-chiudi-foglio">✕</button>
+        <button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button>
       </div>
       <div class="campo">
         <label>Titolo</label>
@@ -221,7 +221,7 @@ const UiObiettivi = (function () {
     const html = `
       <div class="foglio-header">
         <h2>Tappe — ${UiRoutine.escapeHtml(o.titolo)}</h2>
-        <button class="icon-btn" id="btn-chiudi-foglio">✕</button>
+        <button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button>
       </div>
       <div class="elemento-meta" style="margin-bottom:12px;">
         Decidi tu cosa fare e quando: aggiungi le tappe a mano, oppure genera
@@ -263,9 +263,9 @@ const UiObiettivi = (function () {
           <div class="timeline-titolo" style="${t.completata ? 'text-decoration:line-through;color:var(--ink-faint);' : ''}">${UiRoutine.escapeHtml(t.titolo)}</div>
           ${t.note ? `<div class="timeline-meta">${UiRoutine.escapeHtml(t.note)}</div>` : ''}
           <div class="timeline-azioni">
-            <button class="btn btn-sm ${t.completata ? '' : 'btn-ok'}" data-azione="toggle" data-indice="${indiceReale}">${t.completata ? '↺ Riapri' : '✅ Fatta'}</button>
-            <button class="btn btn-sm" data-azione="modifica" data-indice="${indiceReale}">✏️</button>
-            <button class="btn btn-sm btn-warn" data-azione="elimina" data-indice="${indiceReale}">🗑️</button>
+            <button class="btn btn-sm ${t.completata ? '' : 'btn-ok'}" data-azione="toggle" data-indice="${indiceReale}">${Icone.svg(t.completata ? 'indietro' : 'check', 14)} ${t.completata ? 'Riapri' : 'Fatta'}</button>
+            <button class="btn btn-sm" data-azione="modifica" data-indice="${indiceReale}">${Icone.svg('edit', 14)}</button>
+            <button class="btn btn-sm btn-warn" data-azione="elimina" data-indice="${indiceReale}">${Icone.svg('delete', 14)}</button>
           </div>
         </div>
       </div>`;
@@ -310,7 +310,7 @@ const UiObiettivi = (function () {
     const html = `
       <div class="foglio-header">
         <h2>${esistente ? 'Modifica tappa' : 'Nuova tappa'}</h2>
-        <button class="icon-btn" id="btn-chiudi-foglio">✕</button>
+        <button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button>
       </div>
       <div class="campo">
         <label>Titolo</label>
@@ -328,7 +328,7 @@ const UiObiettivi = (function () {
         <button class="btn btn-primary btn-block" id="btn-salva-tappa">Salva</button>
       </div>
       <div class="riga-btn" style="margin-top:8px;">
-        <button class="btn btn-sm btn-ghost btn-block" id="btn-torna-tappe">← Torna alla timeline</button>
+        <button class="btn btn-sm btn-ghost btn-block" id="btn-torna-tappe">${Icone.svg('indietro', 14)} Torna alla timeline</button>
       </div>
     `;
     window.App.apriFoglio(html);

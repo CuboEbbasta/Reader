@@ -17,7 +17,7 @@ const UiImpostazioni = (function () {
           importalo sull'altro dispositivo (telefono ⇄ PC) per tenerli allineati.
         </p>
         <div class="riga-btn">
-          <button class="btn btn-accent" id="btn-esporta">⭱ Esporta dati (.json)</button>
+          <button class="btn btn-accent" id="btn-esporta">${Icone.svg('esporta', 15)} Esporta dati (.json)</button>
         </div>
         <div class="divisore-testo">Importa un backup</div>
         <div class="riga-btn">
@@ -139,7 +139,7 @@ const UiImpostazioni = (function () {
       <div class="legenda-riga">
         <span class="legenda-swatch" style="background:${UiTipi.coloreTipo(t.id)}"></span>
         <span class="legenda-nome">${UiRoutine.escapeHtml(t.nome)}</span>
-        ${t.protetto ? '<span class="badge badge-accent">fisso</span>' : `<button class="icon-btn btn-elimina-tipo" data-id="${t.id}" title="Elimina">🗑️</button>`}
+        ${t.protetto ? '<span class="badge badge-accent">fisso</span>' : `<button class="icon-btn btn-elimina-tipo" data-id="${t.id}" title="Elimina">${Icone.svg('delete', 16)}</button>`}
       </div>
     `).join('');
     cont.querySelectorAll('.btn-elimina-tipo').forEach(b => b.addEventListener('click', async () => {

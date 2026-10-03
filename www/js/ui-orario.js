@@ -44,8 +44,8 @@ const UiOrario = (function () {
           <div class="elemento-meta">${DataUtils.NOMI_GIORNI_ESTESI[o.giorno - 1]} · ${o.oraInizio}-${o.oraFine}${o.aula ? ' · ' + UiRoutine.escapeHtml(o.aula) : ''} · ${ETICHETTE_TIPO_ORARIO[o.tipo] || o.tipo}</div>
         </div>
         <div class="elemento-azioni">
-          <button class="icon-btn btn-modifica-orario" data-indice="${indice}">✏️</button>
-          <button class="icon-btn btn-elimina-orario" data-indice="${indice}">🗑️</button>
+          <button class="icon-btn btn-modifica-orario" data-indice="${indice}">${Icone.svg('edit', 16)}</button>
+          <button class="icon-btn btn-elimina-orario" data-indice="${indice}">${Icone.svg('delete', 16)}</button>
         </div>
       </div>`;
     }).join('');
@@ -55,7 +55,7 @@ const UiOrario = (function () {
     const esistente = indiceEsistente != null ? Dati.stato().orarioFisso[indiceEsistente] : null;
     const o = esistente || { materia: '', tipo: 'universita', giorno: 1, oraInizio: '09:00', oraFine: '11:00', aula: '', note: '' };
     const html = `
-      <div class="foglio-header"><h2>${esistente ? 'Modifica' : 'Nuovo'} impegno fisso</h2><button class="icon-btn" id="btn-chiudi-foglio">✕</button></div>
+      <div class="foglio-header"><h2>${esistente ? 'Modifica' : 'Nuovo'} impegno fisso</h2><button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button></div>
       <div class="campo"><label>Materia / attività</label><input type="text" id="f-materia-orario" value="${UiRoutine.escapeHtml(o.materia)}" placeholder="Es. Analisi Matematica"></div>
       <div class="griglia-2">
         <div class="campo"><label>Tipo</label>

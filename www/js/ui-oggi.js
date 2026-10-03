@@ -130,8 +130,8 @@ const UiOggi = (function () {
           <div class="timeline-titolo">${UiRoutine.escapeHtml(v.nome)}</div>
           <div class="timeline-meta">Priorità ${v.priorita}/10 ${v.tipo === 'task' ? '· task' : v.tipo === 'orario' ? '· orario fisso' : '· routine'} ${badge}</div>
           <div class="timeline-azioni">
-            <button class="btn btn-sm btn-ok btn-segna" data-chiave="${v.chiave}" data-valore="true">✅ Fatto</button>
-            <button class="btn btn-sm btn-warn btn-segna" data-chiave="${v.chiave}" data-valore="false">❌ Non fatto</button>
+            <button class="btn btn-sm btn-ok btn-segna" data-chiave="${v.chiave}" data-valore="true">${Icone.svg('check', 14)} Fatto</button>
+            <button class="btn btn-sm btn-warn btn-segna" data-chiave="${v.chiave}" data-valore="false">${Icone.svg('cross', 14)} Non fatto</button>
           </div>
         </div>
       </div>`;
@@ -231,13 +231,13 @@ const UiOggi = (function () {
     const html = `
       <div class="foglio-header">
         <h2>${UiRoutine.escapeHtml(r.nome)}</h2>
-        <button class="icon-btn" id="btn-chiudi-foglio">✕</button>
+        <button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button>
       </div>
       ${r.descrizione ? `<div class="card-flat" style="margin-bottom:14px;">${UiRoutine.escapeHtml(r.descrizione)}</div>` : ''}
       ${corpoContestualePerTipo(r, chiave, dataISO)}
       <div class="riga-btn" style="margin-top:14px;">
-        <button class="btn btn-ok" id="btn-popup-fatto">✅ Fatto</button>
-        <button class="btn btn-warn" id="btn-popup-non-fatto">❌ Non fatto</button>
+        <button class="btn btn-ok" id="btn-popup-fatto">${Icone.svg('check', 14)} Fatto</button>
+        <button class="btn btn-warn" id="btn-popup-non-fatto">${Icone.svg('cross', 14)} Non fatto</button>
       </div>
     `;
     window.App.apriFoglio(html);

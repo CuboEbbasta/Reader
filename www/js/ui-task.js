@@ -43,8 +43,8 @@ const UiTask = (function () {
     const contTipo = document.getElementById('filtri-task-cartella');
     if (!contTipo) return;
     const tipiUsati = Dati.stato().tipiAttivita;
-    let htmlTipo = `<button type="button" class="btn btn-sm ${filtroTipo === 'tutti' ? 'btn-primary' : ''}" data-ft="tutti">📁 Tutte</button>`;
-    htmlTipo += tipiUsati.map(t => `<button type="button" class="btn btn-sm ${filtroTipo === t.id ? 'btn-primary' : ''}" data-ft="${t.id}">📁 ${UiRoutine.escapeHtml(t.nome)}</button>`).join('');
+    let htmlTipo = `<button type="button" class="btn btn-sm ${filtroTipo === 'tutti' ? 'btn-primary' : ''}" data-ft="tutti">${Icone.svg('cartella', 14)} Tutte</button>`;
+    htmlTipo += tipiUsati.map(t => `<button type="button" class="btn btn-sm ${filtroTipo === t.id ? 'btn-primary' : ''}" data-ft="${t.id}">${Icone.svg('cartella', 14)} ${UiRoutine.escapeHtml(t.nome)}</button>`).join('');
     contTipo.innerHTML = htmlTipo;
     contTipo.querySelectorAll('[data-ft]').forEach(b => b.addEventListener('click', () => { filtroTipo = b.dataset.ft; renderLista(); }));
   }
@@ -76,15 +76,15 @@ const UiTask = (function () {
       const badgeCartella = (t.tipo && t.tipo !== 'altro') ? `<span class="badge" style="background:${UiTipi.coloreTipo(t.tipo)}22;color:${UiTipi.coloreTipo(t.tipo)};">${UiTipi.nomeTipo(t.tipo)}</span>` : '';
       return `
       <div class="elemento-riga" data-id="${t.id}">
-        <div class="priorita-pill" style="background:${coloreDaPriorita(t.priorita)}">${t.priorita}</div>
+        <div class="priorita-pill" style="background:${coloreDaPriorita(t.priorita)}"></div>
         <div class="elemento-corpo">
           <div class="elemento-titolo" style="${t.completata ? 'text-decoration:line-through;color:var(--ink-faint);' : ''}">${UiRoutine.escapeHtml(t.nome)}</div>
-          <div class="elemento-meta">Scade il ${DataUtils.formatDataBreve(t.scadenza)} ${badgeAmbito(stato, t)} ${badgeCartella}</div>
+          <div class="elemento-meta">P${t.priorita} · Scade il ${DataUtils.formatDataBreve(t.scadenza)} ${badgeAmbito(stato, t)} ${badgeCartella}</div>
         </div>
         <div class="elemento-azioni">
-          <button class="icon-btn btn-toggle-task" data-id="${t.id}" title="${t.completata ? 'Segna da fare' : 'Segna fatta'}">${t.completata ? '↺' : '✅'}</button>
-          <button class="icon-btn btn-modifica-task" data-id="${t.id}" title="Modifica">✏️</button>
-          <button class="icon-btn btn-elimina-task" data-id="${t.id}" title="Elimina">🗑️</button>
+          <button class="icon-btn btn-toggle-task" data-id="${t.id}" title="${t.completata ? 'Segna da fare' : 'Segna fatta'}">${Icone.svg(t.completata ? 'indietro' : 'check', 16)}</button>
+          <button class="icon-btn btn-modifica-task" data-id="${t.id}" title="Modifica">${Icone.svg('edit', 16)}</button>
+          <button class="icon-btn btn-elimina-task" data-id="${t.id}" title="Elimina">${Icone.svg('delete', 16)}</button>
         </div>
       </div>
     `;
@@ -187,7 +187,7 @@ const UiTask = (function () {
     const html = `
       <div class="foglio-header">
         <h2>${esistente ? 'Modifica task' : 'Nuova task'}</h2>
-        <button class="icon-btn" id="btn-chiudi-foglio">✕</button>
+        <button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button>
       </div>
       <div class="campo">
         <label>Nome task</label>

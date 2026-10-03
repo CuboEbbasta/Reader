@@ -59,7 +59,7 @@ Contesto attuale: ${JSON.stringify(costruisciContesto())}`;
     entita[m.campo] = m.nuovoValore;
     await Dati.salva();
     window.App.aggiornaTutto();
-    bottone.closest('.card-flat').innerHTML = '<div class="elemento-meta">✅ Modifica applicata.</div>';
+    bottone.closest('.card-flat').innerHTML = '<div class="elemento-meta">Modifica applicata.</div>';
   }
 
   function renderMessaggio(msg) {
@@ -78,7 +78,7 @@ Contesto attuale: ${JSON.stringify(costruisciContesto())}`;
           <div class="elemento-meta">Proposta per <strong>${UiRoutine.escapeHtml(nomeAttuale)}</strong> (${m.tipo}, campo "${m.campo}")</div>
           <div style="margin:6px 0;font-size:13.5px;">${UiRoutine.escapeHtml(m.nuovoValore)}</div>
           <div class="riga-btn">
-            <button class="btn btn-sm btn-ok btn-applica-modifica">✅ Applica</button>
+            <button class="btn btn-sm btn-ok btn-applica-modifica">${Icone.svg('check', 14)} Applica</button>
             <button class="btn btn-sm btn-ghost btn-ignora-modifica">Ignora</button>
           </div>
         </div>`;

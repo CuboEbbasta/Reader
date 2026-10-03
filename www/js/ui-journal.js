@@ -129,9 +129,9 @@ const UiJournal = (function () {
     }
     cont.innerHTML = voci.map(([data, voce]) => `
       <div class="elemento-riga" data-data="${data}" style="cursor:pointer;">
-        <div class="priorita-pill" style="background:var(--accent);">${UiRoutine.escapeHtml(voce.voto || '—')}</div>
+        <div class="priorita-pill" style="background:var(--accent)"></div>
         <div class="elemento-corpo">
-          <div class="elemento-titolo">${DataUtils.formatDataBreve(data)}</div>
+          <div class="elemento-titolo">${DataUtils.formatDataBreve(data)} <span class="badge badge-accent">${UiRoutine.escapeHtml(voce.voto || '—')}</span></div>
           <div class="elemento-meta">${UiRoutine.escapeHtml((voce.fattoBene || '').slice(0, 60)) || 'Nessuna nota su cosa è andato bene'}</div>
         </div>
       </div>

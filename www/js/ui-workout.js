@@ -94,7 +94,7 @@ const UiWorkout = (function () {
         <h3>${titolo}</h3>
         <div class="elemento-meta">${sottotitolo}</div>
         ${renderTabellaEsercizi(esercizi)}
-        <button class="btn btn-sm btn-ok" data-registra-tipo="${tipo}" data-registra-etichetta="${titolo}" style="margin-top:10px;">✅ Ho fatto questa oggi</button>
+        <button class="btn btn-sm btn-ok" data-registra-tipo="${tipo}" data-registra-etichetta="${titolo}" style="margin-top:10px;">${Icone.svg('check', 14)} Ho fatto questa oggi</button>
       </div>
     `;
   }
@@ -114,7 +114,7 @@ const UiWorkout = (function () {
         <div class="elemento-meta" style="margin-bottom:4px;"><strong>${giornoCorrente.etichetta}</strong></div>
         ${renderTabellaEsercizi(giornoCorrente.esercizi)}
         <div class="riga-btn" style="margin-top:12px;">
-          <button class="btn btn-sm btn-ok" data-registra-tipo="adattiva" data-registra-etichetta="${giornoCorrente.etichetta}" data-registra-indice="${giornoSelezionatoAdattiva}">✅ Ho fatto questa oggi</button>
+          <button class="btn btn-sm btn-ok" data-registra-tipo="adattiva" data-registra-etichetta="${giornoCorrente.etichetta}" data-registra-indice="${giornoSelezionatoAdattiva}">${Icone.svg('check', 14)} Ho fatto questa oggi</button>
           <button class="btn btn-sm btn-warn" id="btn-rigenera-adattiva">Rigenera</button>
         </div>
       `;
@@ -157,15 +157,15 @@ const UiWorkout = (function () {
         <div class="riga-btn" style="justify-content:space-between;align-items:center;margin-bottom:8px;">
           <strong>${UiRoutine.escapeHtml(g.etichetta)}</strong>
           <div class="riga-btn">
-            <button class="icon-btn btn-rinomina-giorno-perso" data-indice="${indice}" title="Rinomina">✏️</button>
-            <button class="icon-btn btn-duplica-giorno-perso" data-indice="${indice}" title="Duplica">⧉</button>
-            <button class="icon-btn btn-elimina-giorno-perso" data-indice="${indice}" title="Elimina">🗑️</button>
+            <button class="icon-btn btn-rinomina-giorno-perso" data-indice="${indice}" title="Rinomina">${Icone.svg('edit', 16)}</button>
+            <button class="icon-btn btn-duplica-giorno-perso" data-indice="${indice}" title="Duplica">${Icone.svg('duplica', 16)}</button>
+            <button class="icon-btn btn-elimina-giorno-perso" data-indice="${indice}" title="Elimina">${Icone.svg('delete', 16)}</button>
           </div>
         </div>
         ${renderTabellaEsercizi(g.esercizi)}
         <div class="riga-btn" style="margin-top:10px;">
           <button class="btn btn-sm" data-aggiungi-esercizio-perso="${indice}">+ Esercizio</button>
-          <button class="btn btn-sm btn-ok" data-registra-tipo="personalizzato" data-registra-etichetta="${UiRoutine.escapeHtml(g.etichetta)}">✅ Ho fatto questo oggi</button>
+          <button class="btn btn-sm btn-ok" data-registra-tipo="personalizzato" data-registra-etichetta="${UiRoutine.escapeHtml(g.etichetta)}">${Icone.svg('check', 14)} Ho fatto questo oggi</button>
         </div>
       </div>
     `).join('');
@@ -173,7 +173,7 @@ const UiWorkout = (function () {
 
   function apriFormEsercizioPerso(indiceGiorno) {
     const html = `
-      <div class="foglio-header"><h2>Nuovo esercizio</h2><button class="icon-btn" id="btn-chiudi-foglio">✕</button></div>
+      <div class="foglio-header"><h2>Nuovo esercizio</h2><button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button></div>
       <div class="campo"><label>Nome</label><input type="text" id="f-nome-eserc" placeholder="Es. Squat con zaino"></div>
       <div class="griglia-2">
         <div class="campo"><label>Serie</label><input type="number" id="f-serie-eserc" value="3" min="1"></div>

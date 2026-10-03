@@ -68,9 +68,9 @@ const UiPanoramica = (function () {
       ${renderSottoNav()}
       <div class="card">
         <div class="riga-btn" style="justify-content:space-between;align-items:center;margin-bottom:10px;">
-          <button class="btn btn-sm" id="btn-mese-prev">←</button>
+          <button class="btn btn-sm" id="btn-mese-prev">${Icone.svg('indietro', 16)}</button>
           <strong>${DataUtils.nomeMeseAnno(meseVisualizzato)}</strong>
-          <button class="btn btn-sm" id="btn-mese-next">→</button>
+          <button class="btn btn-sm" id="btn-mese-next">${Icone.svg('avanti', 16)}</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;">
           ${DataUtils.NOMI_GIORNI.map(n => `<div style="text-align:center;font-size:10px;color:var(--ink-faint);font-family:var(--font-mono);">${n}</div>`).join('')}
@@ -157,14 +157,14 @@ const UiPanoramica = (function () {
       const indice = Dati.stato().periodiAnno.indexOf(p);
       return `
       <div class="elemento-riga" data-indice="${indice}">
-        <div class="priorita-pill" style="background:${COLORI_TIPO_PERIODO[p.tipo]};font-size:9px;">${ETICHETTE_TIPO_PERIODO[p.tipo].slice(0,3)}</div>
+        <div class="priorita-pill" style="background:${COLORI_TIPO_PERIODO[p.tipo]}"></div>
         <div class="elemento-corpo">
           <div class="elemento-titolo">${UiRoutine.escapeHtml(p.titolo)}</div>
-          <div class="elemento-meta">${DataUtils.formatDataBreve(p.dataInizio)} → ${DataUtils.formatDataBreve(p.dataFine)}</div>
+          <div class="elemento-meta"><span class="badge badge-accent">${ETICHETTE_TIPO_PERIODO[p.tipo]}</span> ${DataUtils.formatDataBreve(p.dataInizio)} → ${DataUtils.formatDataBreve(p.dataFine)}</div>
         </div>
         <div class="elemento-azioni">
-          <button class="icon-btn btn-modifica-periodo" data-indice="${indice}">✏️</button>
-          <button class="icon-btn btn-elimina-periodo" data-indice="${indice}">🗑️</button>
+          <button class="icon-btn btn-modifica-periodo" data-indice="${indice}">${Icone.svg('edit', 16)}</button>
+          <button class="icon-btn btn-elimina-periodo" data-indice="${indice}">${Icone.svg('delete', 16)}</button>
         </div>
       </div>`;
     }).join('');
@@ -174,7 +174,7 @@ const UiPanoramica = (function () {
     const esistente = indiceEsistente != null ? Dati.stato().periodiAnno[indiceEsistente] : null;
     const p = esistente || { titolo: '', tipo: 'studio', dataInizio: DataUtils.oggiISO(), dataFine: DataUtils.addGiorni(DataUtils.oggiISO(), 7), note: '' };
     const html = `
-      <div class="foglio-header"><h2>${esistente ? 'Modifica periodo' : 'Nuovo periodo'}</h2><button class="icon-btn" id="btn-chiudi-foglio">✕</button></div>
+      <div class="foglio-header"><h2>${esistente ? 'Modifica periodo' : 'Nuovo periodo'}</h2><button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button></div>
       <div class="campo"><label>Titolo</label><input type="text" id="f-titolo-periodo" value="${UiRoutine.escapeHtml(p.titolo)}" placeholder="Es. Sessione esami estiva"></div>
       <div class="campo"><label>Tipo</label>
         <select id="f-tipo-periodo">${Object.keys(ETICHETTE_TIPO_PERIODO).map(k => `<option value="${k}" ${p.tipo===k?'selected':''}>${ETICHETTE_TIPO_PERIODO[k]}</option>`).join('')}</select>
