@@ -47,7 +47,23 @@ async function main() {
   });
   await new Promise(r => setTimeout(r, 400));
 
+  // Alla primissima apertura compare l'onboarding: i listener principali
+  // (incluso quelli del diario) vengono collegati solo dopo averlo chiuso.
+  // Lo attraversiamo cliccando "Avanti" fino in fondo, cosi' testiamo anche lui.
+  const overlayOnboarding = window.document.getElementById('overlay-onboarding');
+  if (overlayOnboarding && overlayOnboarding.classList.contains('attivo')) {
+    for (let i = 0; i < 8 && overlayOnboarding.classList.contains('attivo'); i++) {
+      const btn = window.document.getElementById('btn-onboarding-avanti');
+      if (!btn) break;
+      btn.dispatchEvent(new window.Event('click', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 30));
+    }
+  }
+  await new Promise(r => setTimeout(r, 150));
+
   function assert(cond, msg) { if (!cond) errori.push('ASSERT FALLITO: ' + msg); }
+
+  assert(!overlayOnboarding.classList.contains('attivo'), 'l\'onboarding deve chiudersi dopo aver cliccato "Avanti"/"Inizia" fino alla fine');
 
   assert(window.App, 'window.App deve esistere dopo il caricamento');
   assert(window.Dati && window.Dati.stato(), 'Dati.stato() deve restituire uno stato');
@@ -267,7 +283,18 @@ async function main() {
   bottonePrimaSchedaFissa.dispatchEvent(new window.Event('click', { bubbles: true }));
   await new Promise(r => setTimeout(r, 50));
   const workoutOggi = window.Dati.stato().workoutLog[oggi];
-  assert(workoutOggi && workoutOggi.schedaTipo === 'veloce', 'il log di oggi deve registrare la scheda veloce come fatta');
+  assert(workoutOggi && workoutOggi.length === 1 && workoutOggi[0].schedaTipo === 'veloce', 'il log di oggi (array) deve registrare la scheda veloce come fatta (trovato: ' + JSON.stringify(workoutOggi) + ')');
+
+  // registra un secondo allenamento lo stesso giorno: deve aggiungersi, non sovrascrivere
+  const bottoneSchedaCompleta = window.document.querySelector('[data-registra-tipo="completa"]');
+  if (bottoneSchedaCompleta) {
+    bottoneSchedaCompleta.dispatchEvent(new window.Event('click', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 50));
+    const workoutOggiDopo = window.Dati.stato().workoutLog[oggi];
+    assert(workoutOggiDopo.length === 2, 'si devono poter registrare più allenamenti nello stesso giorno (trovati: ' + workoutOggiDopo.length + ')');
+    await window.Dati.rimuoviWorkoutGiorno(oggi, 1);
+    assert(window.Dati.stato().workoutLog[oggi].length === 1, 'rimuoviWorkoutGiorno deve togliere solo la voce indicata');
+  }
 
   // ---- Orario fisso (ora dentro "Fare"): import JSON + parsing giorni ----
   assert(window.DataUtils.giornoDaTesto('lunedì') === 1, 'giornoDaTesto deve riconoscere "lunedì" come 1');
@@ -485,6 +512,53 @@ async function main() {
 
   const risultatoTestIA = await window.ClienteIA.testConnessione();
   assert(risultatoTestIA.ok === false && typeof risultatoTestIA.errore === 'string', 'senza un server IA reale raggiungibile, testConnessione deve fallire con grazia (non lanciare eccezioni)');
+
+  // ---- Sonno: calcolo ore (incluso passaggio di mezzanotte) e salvataggio ----
+  assert(window.UiSonno.calcolaOreDormite('23:00', '07:00') === 8, 'ore dormite 23:00->07:00 deve dare 8 (attraversa la mezzanotte)');
+  assert(window.UiSonno.calcolaOreDormite('14:00', '15:30') === 1.5, 'ore dormite 14:00->15:30 (pisolino, stesso giorno) deve dare 1.5');
+  window.App.mostraTab('sonno');
+  window.document.getElementById('f-sonno-inizio').value = '23:30';
+  window.document.getElementById('f-sonno-fine').value = '07:00';
+  window.document.getElementById('btn-salva-sonno').dispatchEvent(new window.Event('click', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 50));
+  assert(window.Dati.stato().sonnoLog[oggi] && window.Dati.stato().sonnoLog[oggi].oreDormite === 7.5, 'il sonno di oggi deve essere salvato correttamente (7.5h attese)');
+
+  // ---- Validazione pasto: non deve accettare tutti zeri ----
+  const validazioneZero = window.UiDieta ? null : null; // placeholder per chiarezza di intento
+  window.App.mostraTab('dieta');
+  window.UiOggi.apriDettaglioAttivita('routine:r_pasto', oggi);
+  const btnSalvaPastoPopup = window.document.getElementById('btn-popup-salva-pasto');
+  if (btnSalvaPastoPopup) {
+    window.document.getElementById('popup-pasto-kcal').value = '0';
+    window.document.getElementById('popup-pasto-prot').value = '0';
+    window.document.getElementById('popup-pasto-carb').value = '0';
+    window.document.getElementById('popup-pasto-grassi').value = '0';
+    const pastiPrima = window.Dati.stato().dietaLog[oggi] ? window.Dati.stato().dietaLog[oggi].pasti.length : 0;
+    btnSalvaPastoPopup.dispatchEvent(new window.Event('click', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 50));
+    const pastiDopo = window.Dati.stato().dietaLog[oggi] ? window.Dati.stato().dietaLog[oggi].pasti.length : 0;
+    assert(pastiDopo === pastiPrima, 'un pasto con tutti i valori a zero non deve essere salvato (integrità dati)');
+    window.App.chiudiFoglio();
+  }
+
+  // ---- Voto dieta: calcolo qualitativo rispetto al target ----
+  const targetTest = { targetKcal: 2000, proteineG: 120 };
+  const votoOttimo = window.CalcoloDieta.valutaGiornata({ kcal: 2000, proteine: 120 }, targetTest);
+  assert(votoOttimo && votoOttimo.etichetta === 'Ottimo', 'mangiare esattamente il target deve dare voto "Ottimo" (trovato: ' + JSON.stringify(votoOttimo) + ')');
+  const votoScarso = window.CalcoloDieta.valutaGiornata({ kcal: 3200, proteine: 40 }, targetTest);
+  assert(votoScarso && votoScarso.etichetta === 'Da migliorare', 'scostarsi molto dal target deve dare un voto basso (trovato: ' + JSON.stringify(votoScarso) + ')');
+  assert(window.CalcoloDieta.valutaGiornata({ kcal: 0, proteine: 0 }, targetTest) === null, 'senza nulla mangiato il voto deve essere null (non valutabile)');
+
+  // ---- Workout: gating dietro il profilo Dieta completo ----
+  const profiloDiSalvare = Object.assign({}, window.Dati.stato().profilo);
+  window.Dati.stato().profilo.eta = null; // rende il profilo incompleto
+  await window.Dati.salva();
+  window.App.mostraTab('workout');
+  assert(!!window.document.getElementById('btn-vai-a-dieta'), 'con profilo dieta incompleto, Workout deve mostrare l\'invito a completarlo prima');
+  window.Dati.stato().profilo.eta = profiloDiSalvare.eta; // ripristina
+  await window.Dati.salva();
+  window.App.mostraTab('workout');
+  assert(!window.document.getElementById('btn-vai-a-dieta'), 'con profilo dieta completo, Workout deve mostrare le schede normalmente');
 
   window.close();
 
