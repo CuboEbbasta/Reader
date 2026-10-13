@@ -7,25 +7,34 @@ PC (Electron, finestra vera senza browser), sempre **offline**: nessun dato
 lascia il dispositivo a meno che tu non attivi l'IA.
 
 ## Moduli inclusi
-- **Oggi**: quadrante 24h compatto + timeline della giornata (routine,
-  orario fisso, task in scadenza), con notifiche puntuali.
+- **Oggi**: barra orizzontale delle 24 ore (non più un "orologio" circolare)
+  + timeline della giornata (routine, orario fisso, task in scadenza), con
+  notifiche puntuali e un popup contestuale quando tocchi una voce.
 - **Fare**: Routine (con tipo — Allenamento/Pasto/Sonno/Diario fissi, o
   creane altri tu — e descrizione visibile toccando la voce), Task (ambito
   giorno/settimana con intervallo di date/mese/anno, mai nel passato,
-  organizzabili in "cartelle" tramite lo stesso sistema di tipi), Orario
-  fisso (lezioni/lavoro, importabile da JSON).
+  organizzabili in "cartelle" tramite lo stesso sistema di tipi, con
+  notifiche automatiche ad ogni cambio di ambito), Orario fisso
+  (lezioni/lavoro, importabile da JSON).
 - **Salute**: Dieta (profilo fisico, calorie/macro, piano settimanale a
-  scelta tra 3-6 pasti, log di cosa mangi, peso e misure opzionali) e
-  Workout (scheda veloce, scheda con sbarra, scheda adattiva sui tuoi
+  scelta tra 3-6 pasti, log di cosa mangi con voto automatico di quanto
+  hai mangiato bene, peso e misure opzionali, validazione contro pasti a
+  zero), Workout (scheda veloce, scheda con sbarra, scheda adattiva sui tuoi
   giorni, o una scheda tutta personalizzata con giorni duplicabili — tutte
-  calibrate sul tuo obiettivo se hai compilato il profilo Dieta).
+  calibrate sul tuo obiettivo, richiede prima il profilo Dieta compilato;
+  puoi registrare più allenamenti nello stesso giorno), e Sonno (ore
+  dormite calcolate da sola, qualità opzionale, media settimanale).
 - **Crescita**: Obiettivi (1 mese → 10 anni, 3 tipi, tappe/timeline interne,
-  collegabili a routine e task) e Diario (statistiche automatiche, voto in
-  stile pagella, non modificabile per il futuro).
+  collegabili a routine e task) e Diario (statistiche automatiche incluso
+  allenamento/sonno/voto dieta della giornata, voto in stile pagella, non
+  modificabile per il futuro).
 - **Altro**: Panoramica (vista mese, vista anno con periodi tipo sessioni
   d'esame, storico/recap con confronto sul periodo precedente), Assistente
-  IA (vedi sotto), Impostazioni (tema chiaro/scuro, backup, tipi di
-  attività, permessi notifiche).
+  IA (vedi sotto), Impostazioni (tema chiaro/scuro — bug di contrasto
+  risolto —, backup, tipi di attività, permessi notifiche).
+
+Alla primissima apertura, un breve giro di 6 schermate spiega cosa fa ogni
+sezione, prima di chiedere i permessi.
 
 ## Notifiche
 Ogni voce della giornata (routine, orario fisso) ha la sua notifica, con
@@ -75,9 +84,15 @@ installare tu Termux + Ollama con un modello minuscolo e puntare l'app a
 meccanismo, ma è una configurazione manuale che esula dall'app.
 
 ## Nota sulla UI
-Navigazione a 5 tab principali con sotto-sezioni a pillole; il quadrante
-24h è un elemento compatto/laterale, non centrale. Tema chiaro/scuro
-disponibile in Impostazioni. Non è stato possibile generare un'anteprima
+Secondo giro di design, per allontanarsi dall'aspetto "generico da IA"
+segnalato: palette nuova (blu inchiostro su carta fredda, non più
+crema/terracotta), niente serif decorativo, tutte le emoji sostituite con
+un set di icone lineari coerenti (`www/js/icons.js`), il quadrante 24h
+ridisegnato come barra orizzontale invece di un cerchio stile orologio, e
+le "pillole" di priorità diventate tab di colore a bordo riga invece di
+cerchi con un numero dentro. Risolto anche il bug per cui in tema scuro
+alcuni bottoni risultavano bianco su bianco. Navigazione a 5 tab principali
+con sotto-sezioni a pillole. Non è stato possibile generare un'anteprima
 visiva da questo ambiente (gli strumenti di rendering disponibili qui non
 eseguono JavaScript moderno): la resa reale si vede solo con la build.
 
