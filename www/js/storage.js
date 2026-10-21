@@ -25,6 +25,17 @@ const Dati = (function () {
         { id: 'sonno', nome: 'Sonno', protetto: true },
         { id: 'diario', nome: 'Diario', protetto: true }
       ],
+      paroleChiaveTipi: [ // usate dall'importazione da testo: se il nome contiene la parola, assegna quel tipo
+        { parola: 'pranzo', tipoId: 'pasto' },
+        { parola: 'cena', tipoId: 'pasto' },
+        { parola: 'cenare', tipoId: 'pasto' },
+        { parola: 'colazione', tipoId: 'pasto' },
+        { parola: 'spuntino', tipoId: 'pasto' },
+        { parola: 'palestra', tipoId: 'allenamento' },
+        { parola: 'allenamento', tipoId: 'allenamento' },
+        { parola: 'sveglia', tipoId: 'sonno' },
+        { parola: 'dormire', tipoId: 'sonno' }
+      ],
       obiettivi: [], // { id, titolo, tipo:'concreto'|'generale'|'valoriale', ambito:'1mese'|'6mesi'|'1anno'|'5anni'|'10anni',
                      //   scadenza:"YYYY-MM-DD", descrizione:"", completato:bool, attivitaCollegate:["routine:ID"|"task:ID",...], tappe:[...] }
       journal: {},   // "YYYY-MM-DD" -> { fattoBene, daMigliorare, obiettivoDomani, voto:"7+", votoNumerico:7.25 }
@@ -102,6 +113,7 @@ const Dati = (function () {
       if (!statoCorrente.orarioFisso) statoCorrente.orarioFisso = [];
       if (!statoCorrente.periodiAnno) statoCorrente.periodiAnno = [];
       if (!statoCorrente.tipiAttivita) statoCorrente.tipiAttivita = statoDefault().tipiAttivita;
+      if (!statoCorrente.paroleChiaveTipi) statoCorrente.paroleChiaveTipi = statoDefault().paroleChiaveTipi;
       else {
         // assicura che i 4 protetti esistano sempre, anche su stati salvati prima di questa versione
         statoDefault().tipiAttivita.forEach(preset => {
@@ -255,6 +267,27 @@ const Dati = (function () {
     return { ok: true };
   }
 
+  async function aggiungiParolaChiave(parola, tipoId) {
+    statoCorrente.paroleChiaveTipi.push({ parola: parola.trim(), tipoId });
+    await salva();
+  }
+
+  async function eliminaParolaChiave(indice) {
+    statoCorrente.paroleChiaveTipi.splice(indice, 1);
+    await salva();
+  }
+
+  /** Crea più routine in un colpo solo (usato dall'importazione da testo) */
+  async function importaRoutineMultiple(voci) {
+    voci.forEach(v => {
+      statoCorrente.routine.push({
+        id: generaId('routine'), nome: v.nome, tipo: v.tipo || 'altro', descrizione: '',
+        oraInizio: v.oraInizio, durataMinuti: v.durataMinuti, priorita: 5, giorni: v.giorni, attiva: true
+      });
+    });
+    await salva();
+  }
+
   async function salvaImpostazioniIA(dati) {
     Object.assign(statoCorrente.impostazioniIA, dati);
     await salva();
@@ -383,6 +416,7 @@ const Dati = (function () {
     registraSonno,
     salvaOrarioFisso, salvaPeriodiAnno,
     aggiungiTipoAttivita, eliminaTipoAttivita, salvaImpostazioniIA,
+    aggiungiParolaChiave, eliminaParolaChiave, importaRoutineMultiple,
     esporta, importaDaTesto
   };
 })();
