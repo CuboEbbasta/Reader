@@ -118,6 +118,7 @@ const App = (function () {
       b.addEventListener('click', () => mostraTab(b.dataset.tab));
     });
     document.getElementById('btn-nuova-routine').addEventListener('click', () => UiRoutine.apriForm(null));
+    document.getElementById('btn-importa-testo-routine').addEventListener('click', () => UiRoutine.apriImportoTesto());
     document.getElementById('btn-nuova-task').addEventListener('click', () => UiTask.apriForm(null));
     document.getElementById('btn-nuovo-obiettivo').addEventListener('click', () => UiObiettivi.apriForm(null));
     document.getElementById('overlay-foglio').addEventListener('click', (e) => {

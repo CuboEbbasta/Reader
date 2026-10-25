@@ -138,7 +138,108 @@ const UiRoutine = (function () {
     });
   }
 
-  return { renderLista, apriForm, coloreDaPriorita, escapeHtml };
+  // ---------------- Importa da testo libero ----------------
+  function apriImportoTesto() {
+    const html = `
+      <div class="foglio-header">
+        <h2>Importa orario da testo</h2>
+        <button class="icon-btn" id="btn-chiudi-foglio">${Icone.svg('close', 18)}</button>
+      </div>
+      <div class="elemento-meta" style="margin-bottom:10px;">
+        Scrivi (o incolla) il tuo orario: un giorno per riga (Lun, Mar, Mer, Gio, Ven, Sab, Dom),
+        poi righe puntate con "-". Orari riconosciuti: "6:00: Sveglia", "6:00 alle 7:00: Nome",
+        "Alle 11:00 Nome". Attività con stesso nome e orario su più giorni si uniscono da sole.
+      </div>
+      <div class="campo">
+        <textarea id="f-testo-orario" style="min-height:180px;font-family:var(--font-mono);font-size:12.5px;" placeholder="Lun
+- 6:00: Sveglia
+- 6:00 alle 7:00: Prepararsi
+- 13:00 alle 14:00: Pranzo
+..."></textarea>
+      </div>
+      <div id="parole-chiave-corpo"></div>
+      <div class="riga-btn" style="margin-top:14px;">
+        <button class="btn btn-primary btn-block" id="btn-analizza-testo">Analizza</button>
+      </div>
+      <div id="anteprima-import"></div>
+    `;
+    window.App.apriFoglio(html);
+    document.getElementById('btn-chiudi-foglio').addEventListener('click', window.App.chiudiFoglio);
+    renderParoleChiave();
+    document.getElementById('btn-analizza-testo').addEventListener('click', eseguiAnalisi);
+  }
+
+  function renderParoleChiave() {
+    const cont = document.getElementById('parole-chiave-corpo');
+    const parole = Dati.stato().paroleChiaveTipi;
+    cont.innerHTML = `
+      <div class="divisore-testo">Parole chiave → tipo</div>
+      ${parole.map((p, i) => `
+        <div class="legenda-riga">
+          <span class="legenda-nome">"${escapeHtml(p.parola)}" → ${UiTipi.nomeTipo(p.tipoId)}</span>
+          <button class="icon-btn btn-elimina-parola" data-indice="${i}" title="Rimuovi">${Icone.svg('delete', 14)}</button>
+        </div>
+      `).join('')}
+      <div class="riga-btn" style="margin-top:8px;">
+        <input type="text" id="f-nuova-parola" placeholder="Nuova parola" style="flex:1;padding:7px 9px;border:1px solid var(--border-strong);border-radius:6px;">
+        <select id="f-nuova-parola-tipo" style="padding:7px 9px;border:1px solid var(--border-strong);border-radius:6px;">${UiTipi.opzioniHtml('altro')}</select>
+        <button class="btn btn-sm" id="btn-aggiungi-parola">+</button>
+      </div>
+    `;
+    cont.querySelectorAll('.btn-elimina-parola').forEach(b => b.addEventListener('click', async () => {
+      await Dati.eliminaParolaChiave(parseInt(b.dataset.indice, 10));
+      renderParoleChiave();
+    }));
+    document.getElementById('btn-aggiungi-parola').addEventListener('click', async () => {
+      const parola = document.getElementById('f-nuova-parola').value.trim();
+      const tipoSel = document.getElementById('f-nuova-parola-tipo').value;
+      if (!parola) { window.App.mostraToast('Scrivi una parola chiave.'); return; }
+      if (tipoSel === '__nuovo__') { window.App.mostraToast('Crea prima il tipo da Routine o Task, poi torna qui.'); return; }
+      await Dati.aggiungiParolaChiave(parola, tipoSel);
+      renderParoleChiave();
+    });
+  }
+
+  let ultimaAnalisi = [];
+
+  function eseguiAnalisi() {
+    const testo = document.getElementById('f-testo-orario').value;
+    const risultato = ImportatoreOrario.analizza(testo, Dati.stato().paroleChiaveTipi);
+    ultimaAnalisi = risultato.voci;
+    const cont = document.getElementById('anteprima-import');
+    if (!risultato.voci.length) {
+      cont.innerHTML = `<div class="vuoto">Nessuna riga riconosciuta${risultato.righeIgnorate ? ' (' + risultato.righeIgnorate + ' righe ignorate)' : ''}. Controlla il formato.</div>`;
+      return;
+    }
+    cont.innerHTML = `
+      <div class="divisore-testo">Anteprima: ${risultato.voci.length} attività${risultato.righeIgnorate ? ' · ' + risultato.righeIgnorate + ' righe non riconosciute' : ''}</div>
+      ${risultato.voci.map((v, i) => {
+        const giorniTxt = v.giorni.map(g => DataUtils.NOMI_GIORNI[g - 1]).join(' ');
+        return `
+        <div class="elemento-riga">
+          <input type="checkbox" class="chk-importa" data-indice="${i}" checked style="margin-top:4px;">
+          <div class="elemento-corpo">
+            <div class="elemento-titolo">${escapeHtml(v.nome)} ${v.tipo !== 'altro' ? `<span class="badge badge-accent">${UiTipi.nomeTipo(v.tipo)}</span>` : ''}</div>
+            <div class="elemento-meta">${v.oraInizio} · ${v.durataMinuti} min · ${giorniTxt}</div>
+          </div>
+        </div>`;
+      }).join('')}
+      <button class="btn btn-accent btn-block" id="btn-conferma-import" style="margin-top:14px;">Importa selezionate</button>
+    `;
+    document.getElementById('btn-conferma-import').addEventListener('click', confermaImport);
+  }
+
+  async function confermaImport() {
+    const selezionate = Array.from(document.querySelectorAll('.chk-importa:checked')).map(chk => ultimaAnalisi[parseInt(chk.dataset.indice, 10)]);
+    if (!selezionate.length) { window.App.mostraToast("Seleziona almeno un'attività."); return; }
+    await Dati.importaRoutineMultiple(selezionate);
+    window.App.chiudiFoglio();
+    window.App.mostraToast(`${selezionate.length} routine importate.`);
+    renderLista();
+    window.App.aggiornaOggi();
+  }
+
+  return { renderLista, apriForm, apriImportoTesto, coloreDaPriorita, escapeHtml };
 })();
 
 window.UiRoutine = UiRoutine;
