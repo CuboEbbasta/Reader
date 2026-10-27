@@ -560,6 +560,52 @@ async function main() {
   window.App.mostraTab('workout');
   assert(!window.document.getElementById('btn-vai-a-dieta'), 'con profilo dieta completo, Workout deve mostrare le schede normalmente');
 
+  // ---- Importa da testo libero: parser ----
+  const parole = window.Dati.stato().paroleChiaveTipi;
+  const rPuntuale = window.ImportatoreOrario.parsaRiga('- 6:00: Sveglia');
+  assert(rPuntuale && rPuntuale.oraInizio === '06:00' && rPuntuale.nome === 'Sveglia' && rPuntuale.durataMinuti === 15, 'formato "H:MM: nome" deve dare evento puntuale di 15 min (trovato: ' + JSON.stringify(rPuntuale) + ')');
+  const rSenzaDuePunti = window.ImportatoreOrario.parsaRiga('- 6:00 Claude');
+  assert(rSenzaDuePunti && rSenzaDuePunti.nome === 'Claude', 'formato "H:MM nome" (senza due punti) deve funzionare');
+  const rRange = window.ImportatoreOrario.parsaRiga('- 6:00 alle 7:00: Prepararsi (Viso, Doccia) + Briefing');
+  assert(rRange && rRange.durataMinuti === 60 && rRange.nome === 'Prepararsi (Viso, Doccia) + Briefing', 'formato intervallo deve calcolare la durata e conservare le parentesi nel nome (trovato: ' + JSON.stringify(rRange) + ')');
+  const rAlle = window.ImportatoreOrario.parsaRiga('- Alle 11:00 Claude');
+  assert(rAlle && rAlle.oraInizio === '11:00' && rAlle.nome === 'Claude', 'formato "Alle H:MM nome" deve funzionare');
+  const rAlleMin = window.ImportatoreOrario.parsaRiga('- alle 18:30 Claude');
+  assert(rAlleMin && rAlleMin.oraInizio === '18:30', 'il formato "alle" deve essere insensibile alle maiuscole');
+  const rMezzanotte = window.ImportatoreOrario.parsaRiga('- 24:00 max: Dormire');
+  assert(rMezzanotte && rMezzanotte.oraInizio === '23:59' && rMezzanotte.nome === 'Dormire', '"24:00 max: nome" deve diventare 23:59 senza "max" nel nome (trovato: ' + JSON.stringify(rMezzanotte) + ')');
+  assert(window.ImportatoreOrario.parsaRiga('- questa riga non ha orario') === null, 'una riga senza orario riconoscibile deve dare null, non un errore');
+
+  // ---- Importa da testo libero: analisi completa, unione giorni, parole chiave ----
+  const testoMiniSettimana = 'Lun\n- 13:00 alle 14:00: Pranzo\n- 20:00 alle 22:00: Palestra\n\nMar\n- 13:00 alle 14:00: Pranzo\n- 20:00 alle 22:00: Palestra\n- 22:30: Dormire\n\nMer\n- 8:00 alle 9:00: Cosa mai vista';
+  const analisi = window.ImportatoreOrario.analizza(testoMiniSettimana, parole);
+  const vocePranzo = analisi.voci.find(v => v.nome === 'Pranzo');
+  assert(vocePranzo && vocePranzo.giorni.length === 2 && vocePranzo.giorni[0] === 1 && vocePranzo.giorni[1] === 2, 'stesso nome+orario su Lun e Mar deve fondersi in una routine con giorni [1,2] (trovato: ' + JSON.stringify(vocePranzo) + ')');
+  assert(vocePranzo.tipo === 'pasto', 'la parola chiave "pranzo" deve assegnare il tipo "pasto"');
+  assert(analisi.voci.find(v => v.nome === 'Palestra').tipo === 'allenamento', 'la parola chiave "palestra" deve assegnare il tipo "allenamento"');
+  assert(analisi.voci.find(v => v.nome === 'Dormire').tipo === 'sonno', 'la parola chiave "dormire" deve assegnare il tipo "sonno"');
+  assert(analisi.voci.find(v => v.nome === 'Cosa mai vista').tipo === 'altro', 'un nome senza parole chiave deve restare di tipo "altro"');
+  assert(analisi.righeIgnorate === 0, 'nessuna riga valida deve essere ignorata (ignorate: ' + analisi.righeIgnorate + ')');
+
+  // ---- Importa da testo libero: flusso completo nell'interfaccia ----
+  window.App.mostraTab('routine');
+  const routinePrima = window.Dati.stato().routine.length;
+  window.UiRoutine.apriImportoTesto();
+  window.document.getElementById('f-testo-orario').value = 'Gio\n- 7:00 alle 8:00: Colazione veloce\n- 18:00 alle 19:00: Palestra';
+  window.document.getElementById('btn-analizza-testo').dispatchEvent(new window.Event('click', { bubbles: true }));
+  assert(window.document.querySelectorAll('.chk-importa').length === 2, 'l\'anteprima deve mostrare le 2 attività riconosciute');
+  window.document.getElementById('btn-conferma-import').dispatchEvent(new window.Event('click', { bubbles: true }));
+  await new Promise(r => setTimeout(r, 80));
+  assert(window.Dati.stato().routine.length === routinePrima + 2, 'confermando l\'importazione si devono creare 2 nuove routine (da ' + routinePrima + ' a ' + window.Dati.stato().routine.length + ')');
+  const colazioneImportata = window.Dati.stato().routine.find(r => r.nome === 'Colazione veloce');
+  assert(colazioneImportata && colazioneImportata.tipo === 'pasto' && colazioneImportata.giorni.length === 1 && colazioneImportata.giorni[0] === 4, 'la routine importata deve avere tipo "pasto" (parola chiave "colazione") e giorno Giovedì (trovato: ' + JSON.stringify(colazioneImportata) + ')');
+
+  // ---- Parole chiave personalizzate ----
+  await window.Dati.aggiungiParolaChiave('fumetto', 'altro');
+  assert(window.Dati.stato().paroleChiaveTipi.some(p => p.parola === 'fumetto'), 'deve essere possibile aggiungere una parola chiave personalizzata');
+  await window.Dati.eliminaParolaChiave(window.Dati.stato().paroleChiaveTipi.length - 1);
+  assert(!window.Dati.stato().paroleChiaveTipi.some(p => p.parola === 'fumetto'), 'deve essere possibile rimuovere una parola chiave');
+
   window.close();
 
   if (errori.length) {
