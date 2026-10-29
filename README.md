@@ -11,7 +11,13 @@ lascia il dispositivo a meno che tu non attivi l'IA.
   + timeline della giornata (routine, orario fisso, task in scadenza), con
   notifiche puntuali e un popup contestuale quando tocchi una voce.
 - **Fare**: Routine (con tipo — Allenamento/Pasto/Sonno/Diario fissi, o
-  creane altri tu — e descrizione visibile toccando la voce), Task (ambito
+  creane altri tu — e descrizione visibile toccando la voce; si possono
+  anche **importare da testo libero**: scrivi un giorno per riga e le attività
+  come righe puntate con "-", tipo `- 6:00 alle 7:00: Prepararsi` oppure
+  `- Alle 11:00 Nome`; le attività con stesso nome e orario su più giorni si
+  uniscono da sole, e delle **parole chiave** assegnano il tipo in automatico,
+  es. "pranzo" → Pasto, "palestra" → Allenamento, modificabili dall'utente),
+  Task (ambito
   giorno/settimana con intervallo di date/mese/anno, mai nel passato,
   organizzabili in "cartelle" tramite lo stesso sistema di tipi, con
   notifiche automatiche ad ogni cambio di ambito), Orario fisso
